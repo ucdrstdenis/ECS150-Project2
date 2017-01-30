@@ -1,7 +1,7 @@
 CC      = gcc
 CFLAGS 	= -m64 -Wall -Werror
 HEADERS = common.h process.h
-SOURCES = common.c process.c
+SOURCES = libuthread.c common.c process.c
 OBJECTS = $(SOURCES:.c=.o)
 TARGET  = sshell
  
