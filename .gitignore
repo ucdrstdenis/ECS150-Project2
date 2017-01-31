@@ -1,11 +1,18 @@
+# Instructor .gitignore
+*.d
+test1
+test2
+test3
+test4
+test5
+test-queue
+
+
 # Git bundles
 *.bundle
 
 # OS X Hidden Files
 *.DS_Store
-
-# Binary name
-sshell
 
 # Object files
 *.o

@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="" />
+  <title>ECS 150: Project #2 - User-level thread library</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">ECS 150: Project #2 - User-level thread library</h1>
+<h2 class="author"></h2>
+<h3 class="date">UC Davis, Winter Quarter 2017</h3>
+</div>
+<div id="TOC">
+<ul>
+<li><a href="#general-information">General information</a></li>
+<li><a href="#specifications">Specifications</a><ul>
+<li><a href="#introduction">Introduction</a><ul>
+<li><a href="#skeleton-code">Skeleton code</a></li>
+</ul></li>
+<li><a href="#phase-1-queue-api">Phase 1: queue API</a><ul>
+<li><a href="#makefile">1.1 Makefile</a></li>
+<li><a href="#testing">1.2 Testing</a></li>
+</ul></li>
+<li><a href="#phase-2-thread-api">Phase 2: thread API</a><ul>
+<li><a href="#thread-definition">Thread definition</a></li>
+<li><a href="#public-api">Public API</a></li>
+<li><a href="#private-api">Private API</a></li>
+<li><a href="#internal-context-api">Internal <code>context</code> API</a></li>
+<li><a href="#testing-1">Testing</a></li>
+</ul></li>
+<li><a href="#phase-3-semaphore-api">Phase 3: semaphore API</a><ul>
+<li><a href="#testing-2">Testing</a></li>
+</ul></li>
+<li><a href="#phase-4-preemption">Phase 4: preemption</a><ul>
+<li><a href="#about-disabling-preemption...">About disabling preemption...</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#deliverable">Deliverable</a><ul>
+<li><a href="#constraints">Constraints</a></li>
+<li><a href="#content">Content</a></li>
+<li><a href="#git">Git</a></li>
+<li><a href="#handin">Handin</a></li>
+</ul></li>
+<li><a href="#academic-integrity">Academic integrity</a></li>
+</ul>
+</div>
+<h1 id="general-information">General information</h1>
+<p>Due before <strong>11:59 PM, Friday, Feb 10th, 2017</strong>.</p>
+<p>You will be working with a partner for this project.</p>
+<p>The reference work environment is the CSIF.</p>
+<h1 id="specifications">Specifications</h1>
+<p><em>Note that the specifications for this project are subject to change at anytime for additional clarification.</em></p>
+<h2 id="introduction">Introduction</h2>
+<p>The goal of this project is to understand the idea of threads, by implementing a basic user-level thread library for Linux. Your library will provide a complete interface for applications to create and run independent threads concurrently.</p>
+<p>Similar to existing lightweight user-level thread libraries, your library must be able to:</p>
+<ol style="list-style-type: decimal">
+<li>Create new execution threads</li>
+<li>Schedule the execution of threads in a round-robin fashion</li>
+<li>Provide a thread synchronization API, namely semaphores</li>
+<li>Be preemptive, that is to provide an interrupt-based scheduler</li>
+</ol>
+<p>A working example of the thread library can be found on the CSIF, at <code>/home/jporquet/ecs150/libuthread.a</code>.</p>
+<h3 id="skeleton-code">Skeleton code</h3>
+<p>The skeleton code that you are expected to complete is available in the archive <code>/home/jporquet/ecs150/uthread.zip</code>. This code already defines most of the prototypes for the functions you must implement, as explained in the following sections.</p>
+<pre><code>$ tree
+.
+├── libuthread
+│   ├── context.c*
+│   ├── context.h
+│   ├── Makefile*
+│   ├── preempt.c*
+│   ├── preempt.h
+│   ├── queue.c*
+│   ├── queue.h
+│   ├── semaphore.c*
+│   ├── semaphore.h
+│   ├── uthread.c*
+│   └── uthread.h
+├── Makefile
+├── test1.c
+├── test2.c
+├── test3.c
+├── test4.c
+└── test5.c</code></pre>
+<p>The code is organized in two parts. At the root of the directory, there are some test applications which make use of the thread library. You can compile these applications and run them. In the subdirectory <code>libuthread</code>, there are the files composing the thread library that you must complete. The files to complete are marked with a star (you normally should not have to touch any of the files which are not marked with a star).</p>
+<h2 id="phase-1-queue-api">Phase 1: queue API</h2>
+<p>In this first phase, you must implement a simple FIFO queue. The interface to this queue is defined in <code>libuthread/queue.h</code> and your code should be added into <code>libuthread/queue.c</code>.</p>
+<p>The constraint for this exercise is that all operations (apart from the iterate and delete operation) must be <em>O(1)</em>. This implies that you must choose the underlying data structure for your queue implementation carefully.</p>
+<h3 id="makefile">1.1 Makefile</h3>
+<p>Complete the file <code>libuthread/Makefile</code> in order to generate a <em>library archive</em> named <code>libuthread/libuthread.a</code>.</p>
+<p>This library archive must be the default target of your Makefile, because your Makefile is called from the root Makefile without any argument.</p>
+<p>Note that at first, only the file <code>libuthread/queue.c</code> should be included in your library. You will add the other C files as you start implementing them in order to expand the API provided by your library.</p>
+<h3 id="testing">1.2 Testing</h3>
+<p>Add a new test program in the root directory (e.g. <code>test-queue.c</code>) which tests your queue implementation. It is important that your test program is comprehensive in order to ensure that your queue implementation is as resistant as possible. It will ensure that you don't encounter bugs when using your queue later on.</p>
+<p>A few tests can be to create queues, enqueue some items, make sure that these items are dequeued in the same order, delete some items, test the length of the queue, etc.</p>
+<p>For example, make sure to try your implementation doesn't crash when receiving NULL pointers as arguments:</p>
+<div class="sourceCode"><pre class="sourceCode c"><code class="sourceCode c">assert(queue_destroy(NULL) == -<span class="dv">1</span>);
+assert(queue_enqueue(NULL, NULL) == -<span class="dv">1</span>);</code></pre></div>
+<h2 id="phase-2-thread-api">Phase 2: thread API</h2>
+<p>In this second phase, you must implement most of the thread management (some is provided to you for free). The interface to this thread API is defined in <code>libuthread/uthread.h</code> and your code should be added into <code>libuthread/uthread.c</code>.</p>
+<p>Note that the thread API is actually composed of two sets: a public API and a private API, as explained below.</p>
+<h3 id="thread-definition">Thread definition</h3>
+<p>Threads are independent execution flows that run concurrently in the address space of a single process (and thus, share the same heap memory, open files, process identifier, etc.). Each thread has its own execution context, which mainly consists of:</p>
+<ol style="list-style-type: decimal">
+<li>a state (running, ready, blocked, etc.)</li>
+<li>the set of CPU registers (for saving the thread upon descheduling and restoring it later)</li>
+<li>a stack</li>
+</ol>
+<p>The goal of a thread library is to provide applications that want to use threads an interface (i.e. a set of library functions) that the application can use to create and start new threads, terminate threads, or manipulate threads in different ways.</p>
+<p>For example, the most well-known and wide-spread standard that defines the interface for threads on Unix-style operating systems is called <em>POSIX thread</em> (or <code>pthread</code>). The pthread API defines a set of functions, a subset of which we want to implement for this project. Of course, there are various ways in which the pthread API can be realized, and existing libraries have implemented pthread both in the OS kernel and in user mode. For this project, we aim to implement a few pthread functions at user level on Linux.</p>
+<h3 id="public-api">Public API</h3>
+<p>The public API of the thread library defines the set of functions that applications and the threads they create can call in order to interact with the library.</p>
+<p>From the point of view of applications, threads are designated by a number of type <code>uthread_t</code>. Think of it as the equivalent of <code>pid_t</code> for Unix processes.</p>
+<p>The first function an application has to call in order to initialize your library is <code>uthread_start()</code>. This function must perform three actions:</p>
+<ol style="list-style-type: decimal">
+<li>It registers the so-far single execution flow of the application as the <em>idle</em> thread that the library can schedule</li>
+<li>It creates a new thread, the <em>initial thread</em>, as specified by the arguments of the function</li>
+<li>The function finally execute an infinite loop which
+<ol style="list-style-type: decimal">
+<li>When there are no more threads which are ready to run in the system, it stops the idle loop and exits the program.</li>
+<li>Or it simply yields to next available thread</li>
+</ol></li>
+</ol>
+<p>Once the <em>initial thread</em> created, it can interact with the library to create new threads, exit, yield execution, etc.</p>
+<p>For this step, we expect the library to be non-preemptive. Threads must call the function <code>uthread_yield()</code> in order to ask the library's scheduler to schedule the next available thread. In non-preemptive mode, a non-compliant thread that never yields can keep the processing resource for itself.</p>
+<h3 id="private-api">Private API</h3>
+<p>The private API of the thread library defines the set of functions that can only be accessed from the code of the library itself, and not by applications using the library.</p>
+<p>In order to deal with the creation and scheduling of threads, you first need a data structure that can store information about a single thread. This data structure will likely need to hold, at least, information mentioned above such as the state of the thread (its set of registers), information about its stack (e.g., a pointer to the thread's stack area), and information about the status of the thread (whether it is running, ready to run, or has exited).</p>
+<p>This data structure is often called a thread control block (<em>TCB</em>) and will be described by <code>struct uthread_tcb</code>.</p>
+<p>At this point, the functions defined in the private API could theoretically be only defined in <code>libuthread/uthread.c</code> and not exported to the rest of the library. But with the implementation of the semaphore API, semaphores will need to have access to these functions in order to manipulate the thread when necessary.</p>
+<h3 id="internal-context-api">Internal <code>context</code> API</h3>
+<p>Some code located in <code>libuthread/context.c</code>, and which interface is defined in <code>libuthread/context.h</code>, is accessible for you to use. The four functions provided by this library allow you to:</p>
+<ul>
+<li>Allocate a stack when creating a new thread (and conversely, destroy a stack when a thread is deleted)</li>
+<li>Initialize the stack and the execution context of the new thread so that it will run the specified function with the specified argument</li>
+<li>Switch between two execution contexts</li>
+</ul>
+<h3 id="testing-1">Testing</h3>
+<p>Two applications can help test this phase: - <code>test1</code>: creates a single thread that displays &quot;hello world&quot; - <code>test2</code>: creates three threads in cascade and test the yield feature of the scheduler</p>
+<h2 id="phase-3-semaphore-api">Phase 3: semaphore API</h2>
+<p>Semaphores are a way to control the access to common resources by multiple threads.</p>
+<p>Internally, a semaphore has a certain count, that represent the number of threads able to share a common resource at the same time. This count is determined when initializing the semaphore for the first time.</p>
+<p>Threads can then ask to grab a resource (known as &quot;down&quot; or &quot;P&quot; operation) or release a resource (known as &quot;up&quot; or &quot;V&quot; operation).</p>
+<p>Trying to grab a resource when the count of a semaphore is down to 0 adds the requesting thread to the list of threads that are waiting for this resource. The thread is put in a blocked state and shouldn't be eligible to scheduling.</p>
+<p>When a thread releases a semaphore which count was 0, it checks whether some other threads were currently waiting on it. In such case, the first thread of the waiting list can be unblocked and run.</p>
+<p>As you can now understand, your semaphore implementation will make use of the functions defined in the private thread API.</p>
+<p>The interface of the semaphore API is defined in <code>libuthread/semaphore.h</code> and your implementation should go in <code>libuthread/semaphore.c</code>.</p>
+<h3 id="testing-2">Testing</h3>
+<p>Three testing programs are available in order to test your semaphore implementation:</p>
+<ul>
+<li><code>test3</code>: simple test with two threads and two semaphores</li>
+<li><code>test4</code>: producer/consumer exchanging data in a buffer</li>
+<li><code>test5</code>: prime sieve implemented with a growing pipeline of threads (this test really stresses both the thread management and the semaphore part of the library)</li>
+</ul>
+<h2 id="phase-4-preemption">Phase 4: preemption</h2>
+<p>Up to this point, uncooperative threads could keep the processing resource for themselves if they never called <code>uthread_yield()</code> or never blocked on a semaphore.</p>
+<p>In order to avoid such dangerous behaviour, you will add preemption to your library. The interface of the preemption API is defined in <code>libuthread/preempt.h</code> and your code should be added to <code>libuthread/preempt.c</code>.</p>
+<p>The function that sets up preemption, <code>preempt_start()</code>, is already provided for you to call when you start the thread library. This function configures a timer which will fire an alarm (through a <code>SIGVTALRM</code> signal) a hundred times per second.</p>
+<p>Internally, you must provide a timer handler which will force the currently running thread to yield, so that another thread can be scheduled instead.</p>
+<p>The other functions that you must implement deal with: - enabling/disabling preemption - saving/restoring preemption (saving means that the current preemption state must be saved and preemption must be disabled; restoring that the previously saved preemption state must be restored) - checking if preemption is currently disabled</p>
+<h3 id="about-disabling-preemption...">About disabling preemption...</h3>
+<p>Preemption is a great way to enable reliable and fair scheduling of threads, but it comes with some pitfalls.</p>
+<p>For example, if the library is accessing sensitive data structures in order to add a new thread to the system and gets preempted in the middle, scheduling another thread of execution that might also manipulate the same data structures can cause the internal share state of the library to become inconsistent.</p>
+<p>Therefore, when manipulating shared data structures, preemption should probably be temporarily disabled so that such manipulations are guaranteed to be performed <em>atomically</em>.</p>
+<p>However, avoid disabling preemption each time a thread calls the library. Try to disable preemption only when necessary. For example, the creation of a new thread can be separated between sensitive steps that need to be done atomically and non-sensitive steps that can safely be interrupted and resumed later without affecting the consistency of the shared data structures.</p>
+<p>A good way to figure out whether preemption should be temporarily disabled while performing a sequence of operations is to imagine what would happen if this sequence was interrupted in the middle and another thread scheduled.</p>
+<p>As a hint, in the reference implementation, the preempt API is used in the following files:</p>
+<pre><code>$ grep -l preempt_* libuthread/*.c | uniq
+libuthread/preempt.c
+libuthread/semaphore.c
+libuthread/uthread.c
+libuthread/context.c</code></pre>
+<h1 id="deliverable">Deliverable</h1>
+<h2 id="constraints">Constraints</h2>
+<p>Your library must be written in C, be compiled with GCC and only use the standard functions provided by the GNU C Library. It cannot be linked to any other external libraries.</p>
+<p>Your source code should follow the relevant parts of the <a href="https://www.kernel.org/doc/html/latest/process/coding-style.html">Linux kernel coding style</a> and be properly commented.</p>
+<h2 id="content">Content</h2>
+<p>Your submission should contain, besides your source code, the following files:</p>
+<ul>
+<li><p><code>AUTHORS</code>: full name, student ID and email of each partner, one entry per line formatted in CSV (fields are separated with commas). For example:</p>
+<pre><code>$ cat AUTHORS
+Jean Dupont,00010001,jdupont@ucdavis.edu
+Marc Durand,00010002,mdurand@ucdavis.edu</code></pre></li>
+<li><p><code>REPORT.md</code>: a <a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet">markdown-formatted</a> file containing a description of your submission.</p>
+<p>This file should explain your design choices, how you tested your project, the sources that you may have used to complete this project, etc. and any other relevant information.</p></li>
+</ul>
+<h2 id="git">Git</h2>
+<p>Your submission must be under the shape of a Git bundle. In your git repository, type in the following command (your work must be in the branch <code>master</code>):</p>
+<pre><code>$ git bundle create uthread.bundle master</code></pre>
+<p>It should create the file <code>uthread.bundle</code> that you will submit via <code>handin</code>.</p>
+<p>You can make sure that your bundle has properly been packaged by extracting it in another directory and verifying the log:</p>
+<pre><code>$ cd /path/to/tmp/dir
+$ git clone /path/to/uthread.bundle -b master uthread
+$ cd uthread
+$ git log
+...</code></pre>
+<h2 id="handin">Handin</h2>
+<p>Your Git bundle, as created above, is to be submitted with <code>handin</code> from one of the CSIF computers:</p>
+<pre><code>$ handin cs150 p2 uthread.bundle
+Submitting uthread.bundle... ok
+$</code></pre>
+<p>You can verify that the bundle has been properly submitted:</p>
+<pre><code>$ handin cs150 p2
+The following input files have been received:
+...
+$</code></pre>
+<h1 id="academic-integrity">Academic integrity</h1>
+<p>You are expected to write this project from scratch, thus avoiding to use any existing source code available on the Internet. You must specify in your <code>README.md</code> file any sources of code that you or your partner have viewed to help you complete this project. All class projects will be submitted to MOSS to determine if pairs of students have excessively collaborated with other pairs. Excessive collaboration, or failure to list external code sources will result in the matter being transferred to Student Judicial Affairs.</p>
+</body>
+</html>
