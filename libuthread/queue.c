@@ -23,10 +23,12 @@ typdef struct queue {					/* Define queue FIFO structure 	  */
 /* **************************************************** */
 queue_t queue_create(void)
 {
-    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queueu */
-    Q->head = NULL;                                     /* Set the head                   */
-    Q->tail = NULL;                                     /* Set the tail                   */
-    return Q;                                           /* Return the pointer             */
+    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queueu 	*/
+    if (Q == NULL) return Q;				/* Return NULL pointer if malloc fails  */
+
+    Q->head = NULL;                                     /* Set the head                   	*/
+    Q->tail = NULL;                                     /* Set the tail                   	*/
+    return Q;                                           /* Return the pointer             	*/
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -37,7 +39,7 @@ int queue_destroy(queue_t queue)
     /* JP says to assume queue is empty before deleting */
     /* Return an error if it's not */
 
-    /* Why are we returning ints? Do we need 32 bytes??? char should do */
+    /* Why are we returning ints? Do we need 32 bits??? char should do */
     /* Unless this is just good practive in higher level programming    */
 
     if (queue_t->head != NULL)
@@ -46,7 +48,7 @@ int queue_destroy(queue_t queue)
     if (queue_t->tail != NULL)
         return -1;
     
-    free(&queue_t);
+    free(queue);
     
     return 0;
 }
@@ -57,14 +59,21 @@ int queue_destroy(queue_t queue)
 int queue_enqueue(queue_t queue, void *data)
 {
     thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for the thread */
-    if (queue->head == NULL) {				/* Check if the queue is empty */
-	queue->head = pthread;				/* Point the head to pthread */
-	queue->tail = pthread;				/* Point the tail to pthread */
-    } else 
+    pthread->next = NULL;
+    pthread->data = data;
+
+    if (queue->head == NULL) {				/* Check if the queue is empty 	  */
+	queue->head = pthread;				/* Point the head to pthread 	  */
+	queue->tail = pthread;				/* Point the tail to pthread 	  */
+    } else {
+	queue->tail->next = pthread;			/* Point tail's next to pthread   */		
+	queue->tail = pthread;				/* Point the tail to pthread 	  */
+    }	
+
+    /* TODO Check for possible fails */
+    return 0;						/* Return success 		  */
 }
 /* **************************************************** */
-
-
 /* **************************************************** */
 /* 		     Queue Dequeue 			*/
 /* **************************************************** */
