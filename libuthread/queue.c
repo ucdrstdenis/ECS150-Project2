@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "queue.h"                                      /* queue_t is a pointer to a queue */
+#include "queue.h"                                      /* queue_t is a pointer to a queue      */
 
 
 /* **************************************************** */
-/*                     Queue Structures                 */
+/*                   Queue Structures                   */
 /* **************************************************** */
 typedef struct thread {                                 /* Thread item 			  	            */
     void *data;                                         /* Pointer to data 		  	            */
@@ -15,7 +15,7 @@ typedef struct thread {                                 /* Thread item 			  	   
 typedef struct queue {                                  /* Define queue FIFO structure          */
 	thread *head;                                       /* pointer to FIFO front                */
 	thread *tail;                                       /* Pointer to FIFO back                 */
-} queue;	
+} queue;
 /* **************************************************** */
 /* **************************************************** */
 /*                     Queue Create                     */
@@ -39,16 +39,16 @@ int queue_destroy(queue_t queue)
     /* Return an error if it's not */
 
     /* Why are we returning ints? Do we need 32 bits??? char should do */
-    /* Unless this is just good practice in higher level programming    */
+    /* Unless this is just good practice on newer processors    */
 
     if (queue == NULL) 	           return -1;
     if (queue->head != NULL)       return -1;
     if (queue->tail != NULL)       return -1;
 
     
-    free(queue);
+    free(queue);                                        /* Dealloc the memory                   */
     
-    return 0;
+    return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -56,41 +56,49 @@ int queue_destroy(queue_t queue)
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
-    thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread       */
-    if (pthread == NULL) return -1;                     /* Failed to malloc                 */
+    if (queue == NULL) return -1;                       /* Passed NULL, return fail             */
+
+    thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread           */
+    if (pthread == NULL) return -1;                     /* Failed to malloc                     */
 
     pthread->next = NULL;
     pthread->data = data;
 
-    if (queue->head == NULL) {                          /* Check if the queue is empty 	    */
-        queue->head = pthread;                          /* Point the head to pthread 	    */
-        queue->tail = pthread;                          /* Point the tail to pthread 	    */
+    if (queue->head == NULL) {                          /* Check if the queue is empty 	        */
+        queue->head = pthread;                          /* Point the head to pthread 	        */
+        queue->tail = pthread;                          /* Point the tail to pthread 	        */
     } else {
-        queue->tail->next = pthread;                    /* Point tail's next to pthread     */
-        queue->tail = pthread;                          /* Point the tail to pthread 	    */
+        queue->tail->next = pthread;                    /* Point tail's next to pthread         */
+        queue->tail = pthread;                          /* Point the tail to pthread 	        */
     }	
 
     /* TODO Check for possible fails */
-    return 0;                                           /* Return success                   */
+    return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
-/* 		     Queue Dequeue 			*/
+/*                      Queue Dequeue                   */
 /* **************************************************** */
 int queue_dequeue(queue_t queue, void **data)
 {
+    if (queue == NULL) return -1;                       /* Passed NULL, return fail             */
 	/* TODO Phase 1 */
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                   Queue Delete                       */
+/*                       Queue Delete                   */
 /* **************************************************** */
 int queue_delete(queue_t queue, void *data)
 {
     /* JP says only the internal node should be freed            */
     /* You cannot make any asumption on the *data that is given. */
     /* In other words, this data doesn't belong to the queue API */
+    if (queue == NULL) return -1;                       /* Passed NULL queue, return fail       */
 
+
+
+
+    return 0;                                           /* Return success                       */
 
 }
 /* **************************************************** */
@@ -99,7 +107,12 @@ int queue_delete(queue_t queue, void *data)
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
+    if (queue == NULL)  return -1;                      /* Passed NULL queue, return fail       */
+    if (func == NULL)   return -1;                      /* Passed NULL func, return fail        */
 	/* TODO Phase 1 */
+
+
+    return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 
@@ -108,7 +121,11 @@ int queue_iterate(queue_t queue, queue_func_t func)
 /* **************************************************** */
 int queue_length(queue_t *queue)
 {
+    if (queue == NULL) return -1;                       /* Passed NULL queue, return fail       */
 	/* TODO Phase 1 */
+
+
+    return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 
