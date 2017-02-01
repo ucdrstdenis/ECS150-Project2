@@ -1,44 +1,107 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "queue.h"
+#include "queue.h"  /* queue_t is a pointer to a queueu */
 
-struct queue {
-	/* TODO Phase 1 */
-};
 
+/* **************************************************** */
+/*                     Queue Structures                 */
+/* **************************************************** */
+typedef struct thread {					/* Thread item 			  */
+    void *data;						/* Pointer to data 		  */
+    struct thread *next;				/* Pointer to next thread 	  */
+} thread;
+
+
+typdef struct queue {					/* Define queue FIFO structure 	  */
+	thread *head;					/* pointer to FIFO front 	  */
+	thread *tail;					/* Pointer to FIFO back 	  */
+} queue;	
+/* **************************************************** */
+/* **************************************************** */
+/*                     Queue Create                     */
+/* **************************************************** */
 queue_t queue_create(void)
 {
-	/* TODO Phase 1 */
+    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queueu */
+    Q->head = NULL;                                     /* Set the head                   */
+    Q->tail = NULL;                                     /* Set the tail                   */
+    return Q;                                           /* Return the pointer             */
 }
-
+/* **************************************************** */
+/* **************************************************** */
+/* 			Queue Destroy 			*/
+/* **************************************************** */
 int queue_destroy(queue_t queue)
 {
-	/* TODO Phase 1 */
-}
+    /* JP says to assume queue is empty before deleting */
+    /* Return an error if it's not */
 
+    /* Why are we returning ints? Do we need 32 bytes??? char should do */
+    /* Unless this is just good practive in higher level programming    */
+
+    if (queue_t->head != NULL)
+        return -1;
+
+    if (queue_t->tail != NULL)
+        return -1;
+    
+    free(&queue_t);
+    
+    return 0;
+}
+/* **************************************************** */
+/* **************************************************** */
+/* 		      Queue Enqueue 			*/
+/* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
-	/* TODO Phase 1 */
+    thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for the thread */
+    if (queue->head == NULL) {				/* Check if the queue is empty */
+	queue->head = pthread;				/* Point the head to pthread */
+	queue->tail = pthread;				/* Point the tail to pthread */
+    } else 
 }
+/* **************************************************** */
 
+
+/* **************************************************** */
+/* 		     Queue Dequeue 			*/
+/* **************************************************** */
 int queue_dequeue(queue_t queue, void **data)
 {
 	/* TODO Phase 1 */
 }
+/* **************************************************** */
 
+
+/* **************************************************** */
+/* 		      Queue Delete 			*/
+/* **************************************************** */
 int queue_delete(queue_t queue, void *data)
 {
+    /* JP says only the internal node should be freed            */
+    /* You cannot make any asumption on the *data that is given. */
+    /* In other words, this data doesn't belong to the queue API */
+
 	/* TODO Phase 1 */
 }
-
+/* **************************************************** */
+/* **************************************************** */
+/* 			Queue Iterate 			*/
+/* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
 	/* TODO Phase 1 */
 }
+/* **************************************************** */
 
-int queue_length(queue_t queue)
+/* **************************************************** */
+/* 			Queue Length 			*/
+/* **************************************************** */
+int queue_length(queue_t *queue)
 {
 	/* TODO Phase 1 */
 }
+/* **************************************************** */
 
