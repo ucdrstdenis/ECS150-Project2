@@ -7,14 +7,14 @@
 /* **************************************************** */
 /*                     Queue Structures                 */
 /* **************************************************** */
-typedef struct thread {                                 /* Thread item 			  	    */
-    void *data;                                         /* Pointer to data 		  	    */
-    struct thread *next;                                /* Pointer to next thread 	  	*/
+typedef struct thread {                                 /* Thread item 			  	            */
+    void *data;                                         /* Pointer to data 		  	            */
+    struct thread *next;                                /* Pointer to next thread 	  	        */
 } thread;
 
-typdef struct queue {                                   /* Define queue FIFO structure 	  	*/
-	thread *head;                                       /* pointer to FIFO front 	  	    */
-	thread *tail;                                       /* Pointer to FIFO back 	  	    */
+typedef struct queue {                                  /* Define queue FIFO structure          */
+	thread *head;                                       /* pointer to FIFO front                */
+	thread *tail;                                       /* Pointer to FIFO back                 */
 } queue;	
 /* **************************************************** */
 /* **************************************************** */
@@ -22,11 +22,11 @@ typdef struct queue {                                   /* Define queue FIFO str
 /* **************************************************** */
 queue_t queue_create(void)
 {
-    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queueu 	    */
+    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queue 	    */
     if (Q == NULL) return Q;                            /* Return NULL pointer if malloc fails  */
 
-    //Q->head = NULL;                                     /* Set the head                   	    */
-    //Q->tail = NULL;                                     /* Set the tail                   	    */
+    //Q->head = NULL;                                   /* Set the head                   	    */
+    //Q->tail = NULL;                                   /* Set the tail                   	    */
     return Q;                                           /* Return the pointer             	    */
 }
 /* **************************************************** */
@@ -39,11 +39,11 @@ int queue_destroy(queue_t queue)
     /* Return an error if it's not */
 
     /* Why are we returning ints? Do we need 32 bits??? char should do */
-    /* Unless this is just good practive in higher level programming    */
+    /* Unless this is just good practice in higher level programming    */
 
-    if (queue_t == NULL) 	           return -1;
-    if (queue_t->head != NULL)         return -1;
-    if (queue_t->tail != NULL)         return -1;
+    if (queue == NULL) 	           return -1;
+    if (queue->head != NULL)       return -1;
+    if (queue->tail != NULL)       return -1;
 
     
     free(queue);
@@ -56,22 +56,22 @@ int queue_destroy(queue_t queue)
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
-    thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread */
-    if (pthread == NULL) return -1;                     /* Failed to alloc 		  */
+    thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread       */
+    if (pthread == NULL) return -1;                     /* Failed to malloc                 */
 
     pthread->next = NULL;
     pthread->data = data;
 
-    if (queue->head == NULL) {                          /* Check if the queue is empty 	  */
-	queue->head = pthread;                              /* Point the head to pthread 	  */
-	queue->tail = pthread;                              /* Point the tail to pthread 	  */
+    if (queue->head == NULL) {                          /* Check if the queue is empty 	    */
+        queue->head = pthread;                          /* Point the head to pthread 	    */
+        queue->tail = pthread;                          /* Point the tail to pthread 	    */
     } else {
-	queue->tail->next = pthread;                        /* Point tail's next to pthread   */		
-	queue->tail = pthread;                              /* Point the tail to pthread 	  */
+        queue->tail->next = pthread;                    /* Point tail's next to pthread     */
+        queue->tail = pthread;                          /* Point the tail to pthread 	    */
     }	
 
     /* TODO Check for possible fails */
-    return 0;                                           /* Return success                 */
+    return 0;                                           /* Return success                   */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -83,7 +83,7 @@ int queue_dequeue(queue_t queue, void **data)
 }
 /* **************************************************** */
 /* **************************************************** */
-/* 		      Queue Delete 			*/
+/*                   Queue Delete                       */
 /* **************************************************** */
 int queue_delete(queue_t queue, void *data)
 {
@@ -95,7 +95,7 @@ int queue_delete(queue_t queue, void *data)
 }
 /* **************************************************** */
 /* **************************************************** */
-/* 			Queue Iterate                               */
+/*                  Queue Iterate                       */
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
