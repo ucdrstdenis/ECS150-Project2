@@ -7,14 +7,14 @@
 /* **************************************************** */
 /*                   Queue Structures                   */
 /* **************************************************** */
-typedef struct thread {                                 /* Thread item 			  	            */
-    void *data;                                         /* Pointer to data 		  	            */
-    struct thread *next;                                /* Pointer to next thread 	  	        */
+typedef struct thread {                                 /* Thread item                          */
+    void *data;                                         /* Pointer to data                      */
+    struct thread *next;                                /* Pointer to next thread               */
 } thread;
 
 typedef struct queue {                                  /* Define queue FIFO structure          */
-	thread *head;                                       /* pointer to FIFO front                */
-	thread *tail;                                       /* Pointer to FIFO back                 */
+    thread *head;                                       /* pointer to FIFO front                */
+    thread *tail;                                       /* Pointer to FIFO back                 */
 } queue;
 /* **************************************************** */
 /* **************************************************** */
@@ -22,12 +22,12 @@ typedef struct queue {                                  /* Define queue FIFO str
 /* **************************************************** */
 queue_t queue_create(void)
 {
-    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queue 	    */
+    queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queue        */
     if (Q == NULL) return Q;                            /* Return NULL pointer if malloc fails  */
 
-    //Q->head = NULL;                                   /* Set the head                   	    */
-    //Q->tail = NULL;                                   /* Set the tail                   	    */
-    return Q;                                           /* Return the pointer             	    */
+    //Q->head = NULL;                                   /* Set the head                         */
+    //Q->tail = NULL;                                   /* Set the tail                         */
+    return Q;                                           /* Return the pointer                   */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -35,9 +35,9 @@ queue_t queue_create(void)
 /* **************************************************** */
 int queue_destroy(queue_t queue)
 {
-    if (queue == NULL) 	           return -1;
-    if (queue->head != NULL)       return -1;
-    if (queue->tail != NULL)       return -1;
+    if (queue == NULL)              return -1;
+    if (queue->head != NULL)        return -1;
+    if (queue->tail != NULL)        return -1;
 
     
     free(queue);                                        /* Deallocate the memory                */
@@ -46,7 +46,7 @@ int queue_destroy(queue_t queue)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                  Queue Enqueue                       */
+/*                      Queue Enqueue                   */
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
@@ -64,7 +64,7 @@ int queue_enqueue(queue_t queue, void *data)
     } else {
         queue->tail->next = pthread;                    /* Point tail's next to pthread         */
         queue->tail = pthread;                          /* Point the tail to pthread 	        */
-    }	
+    }
 
     /* TODO Check for possible fails */
     return 0;                                           /* Return success                       */
@@ -99,7 +99,7 @@ int queue_delete(queue_t queue, void *data)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                  Queue Iterate                       */
+/*                      Queue Iterate                   */
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
@@ -113,7 +113,7 @@ int queue_iterate(queue_t queue, queue_func_t func)
 /* **************************************************** */
 
 /* **************************************************** */
-/* 			Queue Length                                */
+/*                      Queue Length                    */
 /* **************************************************** */
 int queue_length(queue_t queue)
 {
