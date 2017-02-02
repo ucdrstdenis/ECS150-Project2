@@ -12,7 +12,9 @@ libuthread.a
 *.bundle
 
 # Eclipse files
-.cproject
+*.cproject
+*.project
+
 
 # OS X Hidden Files
 *.DS_Store
