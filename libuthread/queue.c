@@ -25,8 +25,8 @@ queue_t queue_create(void)
     queue_t Q = (queue*) malloc(sizeof(queue));         /* Allocate memory for the queue        */
     if (Q == NULL) return Q;                            /* Return NULL pointer if malloc fails  */
 
-    //Q->head = NULL;                                   /* Set the head                         */
-    //Q->tail = NULL;                                   /* Set the tail                         */
+    Q->head = NULL;                                     /* Set the head                         */
+    Q->tail = NULL;                                     /* Set the tail                         */
     return Q;                                           /* Return the pointer                   */
 }
 /* **************************************************** */
@@ -35,13 +35,11 @@ queue_t queue_create(void)
 /* **************************************************** */
 int queue_destroy(queue_t queue)
 {
-    if (queue == NULL)              return -1;
-    if (queue->head != NULL)        return -1;
-    if (queue->tail != NULL)        return -1;
+    if (queue == NULL)              return -1;          /* Passed NULL, return fail             */
+    if (queue->head != NULL)        return -1;          /* Queue is not empty, return fail      */
+    if (queue->tail != NULL)        return -1;          /* Queue is not empty, return fail      */
 
-    
     free(queue);                                        /* Deallocate the memory                */
-    
     return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
@@ -50,13 +48,13 @@ int queue_destroy(queue_t queue)
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
-    if (queue == NULL) return -1;                       /* Passed NULL, return fail             */
-
     thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread           */
-    if (pthread == NULL) return -1;                     /* Failed to malloc, return -1          */
 
-    pthread->next = NULL;
-    pthread->data = data;
+    if (queue == NULL)              return -1;          /* Passed NULL, return fail             */
+    if (pthread == NULL)            return -1;          /* Failed to malloc, return -1          */
+
+    pthread->next = NULL;                               /* No thread next in queue yet          */
+    pthread->data = data;                               /* Set the pointer to the data          */
 
     if (queue->head == NULL) {                          /* Check if the queue is empty 	        */
         queue->head = pthread;                          /* Point the head to pthread 	        */
@@ -66,12 +64,11 @@ int queue_enqueue(queue_t queue, void *data)
         queue->tail = pthread;                          /* Point the tail to pthread 	        */
     }
 
-    /* TODO Check for possible fails */
     return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                      Queue Dequeue                   */
+/*                    Queue Dequeue                     */
 /* **************************************************** */
 int queue_dequeue(queue_t queue, void **data)
 {
@@ -82,14 +79,17 @@ int queue_dequeue(queue_t queue, void **data)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                       Queue Delete                   */
+/*                    Queue Delete                      */
 /* **************************************************** */
 int queue_delete(queue_t queue, void *data)
 {
     /* JP says only the internal node should be freed            */
-    /* You cannot make any asumption on the *data that is given. */
+    /* You cannot make any assumption on the *data that is given. */
     /* In other words, this data doesn't belong to the queue API */
-    if (queue == NULL) return -1;                       /* Passed NULL queue, return fail       */
+
+    if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
+    if (queue->head == NULL)    return -1;              /* Queue head is NULL, return fail      */
+    if (queue->tail == NULL)    return -1;              /* Queue tail is NULL, return fail      */
     /* TODO Phase 1 */
 
 
@@ -99,7 +99,7 @@ int queue_delete(queue_t queue, void *data)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                      Queue Iterate                   */
+/*                    Queue Iterate                     */
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
@@ -113,15 +113,26 @@ int queue_iterate(queue_t queue, queue_func_t func)
 /* **************************************************** */
 
 /* **************************************************** */
-/*                      Queue Length                    */
+/*                     Queue Length                     */
 /* **************************************************** */
 int queue_length(queue_t queue)
 {
-    if (queue == NULL) return -1;                       /* Passed NULL queue, return fail       */
-	/* TODO Phase 1 */
+    int length = 1;
+    thread *curr;
 
+    if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
+    if (queue->head == NULL)    return  0;              /* Queue head is NULL, return 0         */
+    if (queue->tail == NULL)    return -1;              /* Q head not NULL, tail is NULL, fail  */
 
-    return 0;                                           /* Return success                       */
+    curr = queue->head;                                 /* Current node to iterate over         */
+
+    while(curr->next != queue->tail) {
+        curr = curr->next;                              /* Get the next node in the list        */
+        length++;                                       /* Increment the length                 */
+        if (curr == NULL)       return -1;              /* Node improperly set, return fail     */
+    }
+
+    return length;                                      /* Return the length of the queue       */
 }
 /* **************************************************** */
 
