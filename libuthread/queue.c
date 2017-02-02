@@ -7,14 +7,14 @@
 /* **************************************************** */
 /*                   Queue Structures                   */
 /* **************************************************** */
-typedef struct thread {                                 /* Thread item                          */
+typedef struct node {                                   /* Thread item                          */
     void *data;                                         /* Pointer to data                      */
-    struct thread *next;                                /* Pointer to next thread               */
-} thread;
+    struct node *next;                                  /* Pointer to next thread               */
+} node;
 
 typedef struct queue {                                  /* Define queue FIFO structure          */
-    thread *head;                                       /* pointer to FIFO front                */
-    thread *tail;                                       /* Pointer to FIFO back                 */
+    node *head;                                         /* pointer to FIFO front                */
+    node *tail;                                         /* Pointer to FIFO back                 */
 } queue;
 /* **************************************************** */
 /* **************************************************** */
@@ -31,38 +31,36 @@ queue_t queue_create(void)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                  Queue Destroy                       */
+/*                    Queue Destroy                     */
 /* **************************************************** */
 int queue_destroy(queue_t queue)
 {
-    if (queue == NULL)              return -1;          /* Passed NULL, return fail             */
-    if (queue->head != NULL)        return -1;          /* Queue is not empty, return fail      */
-    if (queue->tail != NULL)        return -1;          /* Queue is not empty, return fail      */
+    if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
+    if (queue->head != NULL)    return -1;              /* Queue is not empty, return fail      */
+    if (queue->tail != NULL)    return -1;              /* Queue is not empty, return fail      */
 
     free(queue);                                        /* Deallocate the memory                */
     return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                      Queue Enqueue                   */
+/*                    Queue Enqueue                     */
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
-    thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread           */
+    node *pnode = (node*) malloc(sizeof(node));         /* Allocate memory for thread           */
 
-    if (queue == NULL)              return -1;          /* Passed NULL, return fail             */
-    if (pthread == NULL)            return -1;          /* Failed to malloc, return -1          */
+    if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
+    if (pnode == NULL)          return -1;              /* Failed to malloc, return fail        */
 
-    pthread->next = NULL;                               /* No thread next in queue yet          */
-    pthread->data = data;                               /* Set the pointer to the data          */
+    if (queue->head == NULL)                            /* Check if the queue is empty 	        */
+        queue->head = pnode;                            /* Point the head to the new node 	    */
+    else
+        queue->tail->next = pnode;                      /* Point current tail to new node       */
 
-    if (queue->head == NULL) {                          /* Check if the queue is empty 	        */
-        queue->head = pthread;                          /* Point the head to pthread 	        */
-        queue->tail = pthread;                          /* Point the tail to pthread 	        */
-    } else {
-        queue->tail->next = pthread;                    /* Point tail's next to pthread         */
-        queue->tail = pthread;                          /* Point the tail to pthread 	        */
-    }
+    queue->tail = pnode;                                /* Point the tail to the new node       */
+    pnode->next = queue->head;                          /* Last node points back to the head    */
+    pnode->data = data;                                 /* Set the pointer to the data          */
 
     return 0;                                           /* Return success                       */
 }
@@ -72,7 +70,7 @@ int queue_enqueue(queue_t queue, void *data)
 /* **************************************************** */
 int queue_dequeue(queue_t queue, void **data)
 {
-    if (queue == NULL) return -1;                       /* Passed NULL, return fail             */
+    if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
 	/* TODO Phase 1 */
 
     return 0;                                           /* Return success                       */
@@ -103,8 +101,8 @@ int queue_delete(queue_t queue, void *data)
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
-    if (queue == NULL)  return -1;                      /* Passed NULL queue, return fail       */
-    if (func == NULL)   return -1;                      /* Passed NULL func, return fail        */
+    if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
+    if (func == NULL)           return -1;              /* Passed NULL func, return fail        */
 	/* TODO Phase 1 */
 
 
@@ -118,7 +116,7 @@ int queue_iterate(queue_t queue, queue_func_t func)
 int queue_length(queue_t queue)
 {
     int length = 1;
-    thread *curr;
+    node *curr;
 
     if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
     if (queue->head == NULL)    return  0;              /* Queue head is NULL, return 0         */
@@ -126,7 +124,7 @@ int queue_length(queue_t queue)
 
     curr = queue->head;                                 /* Current node to iterate over         */
 
-    while(curr->next != queue->tail) {
+    while(curr->next != queue->head) {                  /* While more items in the list         */
         curr = curr->next;                              /* Get the next node in the list        */
         length++;                                       /* Increment the length                 */
         if (curr == NULL)       return -1;              /* Node improperly set, return fail     */
