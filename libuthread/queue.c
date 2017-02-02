@@ -71,6 +71,8 @@ int queue_enqueue(queue_t queue, void *data)
 int queue_dequeue(queue_t queue, void **data)
 {
     if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
+
+
 	/* TODO Phase 1 */
 
     return 0;                                           /* Return success                       */
@@ -85,7 +87,6 @@ int queue_delete(queue_t queue, void *data)
 
     if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
     if (queue->head == NULL)    return -1;              /* Queue head is NULL, return fail      */
-    if (queue->tail == NULL)    return -1;              /* Queue tail is NULL, return fail      */
 
     curr = queue->head;                                 /* Current node is the head             */
     prev = NULL;                                        /* Previous node                        */
@@ -126,6 +127,9 @@ int queue_iterate(queue_t queue, queue_func_t func)
 {
     if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
     if (func == NULL)           return -1;              /* Passed NULL function, return fail    */
+
+
+
 	/* TODO Phase 1 */
 
 
