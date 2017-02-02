@@ -48,7 +48,7 @@ int queue_destroy(queue_t queue)
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
-    node *pnode = (node*) malloc(sizeof(node));         /* Allocate memory for thread           */
+    node *pnode = (node*) malloc(sizeof(node));         /* Allocate memory for node             */
 
     if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
     if (pnode == NULL)          return -1;              /* Failed to malloc, return fail        */
@@ -81,13 +81,6 @@ int queue_dequeue(queue_t queue, void **data)
 /* **************************************************** */
 int queue_delete(queue_t queue, void *data)
 {
-    /* JP says only the internal node should be freed            */
-    /* You cannot make any assumption on the *data that is given. */
-    /* In other words, this data doesn't belong to the queue API */
-
-    /* Do we just delete the node that points to the data ?? */
-    /* Or do we also free the data??                    */
-
     node *curr, *prev;                                  /* Current node to iterate over         */
 
     if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
