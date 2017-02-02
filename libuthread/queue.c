@@ -54,13 +54,13 @@ int queue_enqueue(queue_t queue, void *data)
     if (pnode == NULL)          return -1;              /* Failed to malloc, return fail        */
 
     if (queue->head == NULL)                            /* Check if the queue is empty 	        */
-        queue->head = pnode;                            /* Point the head to the new node 	    */
-    else
+        queue->head = pnode;                            /* Point the head to the new node       */
+    else                                                /* If it is not empty                   */
         queue->tail->next = pnode;                      /* Point current tail to new node       */
 
-    queue->tail = pnode;                                /* Point the tail to the new node       */
-    pnode->next = queue->head;                          /* Last node points back to the head    */
     pnode->data = data;                                 /* Set the pointer to the data          */
+    pnode->next = queue->head;                          /* Last node points back to the head    */
+    queue->tail = pnode;                                /* Point the tail to the new node       */
 
     return 0;                                           /* Return success                       */
 }
@@ -148,8 +148,8 @@ int queue_length(queue_t queue)
     curr = queue->head;                                 /* Current node to iterate over         */
 
     while(curr->next != queue->head) {                  /* While more items in the queue        */
-        curr = curr->next;                              /* Get the next node in the queue       */
         length++;                                       /* Increment the length                 */
+        curr = curr->next;                              /* Get the next node in the queue       */
         if (curr == NULL)       return -1;              /* Node improperly set, return fail     */
     }
 
