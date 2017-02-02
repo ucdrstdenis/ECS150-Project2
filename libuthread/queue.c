@@ -31,35 +31,29 @@ queue_t queue_create(void)
 }
 /* **************************************************** */
 /* **************************************************** */
-/* 			            Queue Destroy                   */
+/*                  Queue Destroy                       */
 /* **************************************************** */
 int queue_destroy(queue_t queue)
 {
-    /* JP says to assume queue is empty before deleting */
-    /* Return an error if it's not */
-
-    /* Why are we returning ints? Do we need 32 bits??? char should do */
-    /* Unless this is just good practice on newer processors    */
-
     if (queue == NULL) 	           return -1;
     if (queue->head != NULL)       return -1;
     if (queue->tail != NULL)       return -1;
 
     
-    free(queue);                                        /* Dealloc the memory                   */
+    free(queue);                                        /* Deallocate the memory                */
     
     return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
-/* 		            Queue Enqueue 			            */
+/*                  Queue Enqueue                       */
 /* **************************************************** */
 int queue_enqueue(queue_t queue, void *data)
 {
     if (queue == NULL) return -1;                       /* Passed NULL, return fail             */
 
     thread *pthread = (thread*) malloc(sizeof(thread)); /* Allocate memory for thread           */
-    if (pthread == NULL) return -1;                     /* Failed to malloc                     */
+    if (pthread == NULL) return -1;                     /* Failed to malloc, return -1          */
 
     pthread->next = NULL;
     pthread->data = data;
@@ -83,6 +77,8 @@ int queue_dequeue(queue_t queue, void **data)
 {
     if (queue == NULL) return -1;                       /* Passed NULL, return fail             */
 	/* TODO Phase 1 */
+
+    return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -94,7 +90,7 @@ int queue_delete(queue_t queue, void *data)
     /* You cannot make any asumption on the *data that is given. */
     /* In other words, this data doesn't belong to the queue API */
     if (queue == NULL) return -1;                       /* Passed NULL queue, return fail       */
-
+    /* TODO Phase 1 */
 
 
 
@@ -119,7 +115,7 @@ int queue_iterate(queue_t queue, queue_func_t func)
 /* **************************************************** */
 /* 			Queue Length                                */
 /* **************************************************** */
-int queue_length(queue_t *queue)
+int queue_length(queue_t queue)
 {
     if (queue == NULL) return -1;                       /* Passed NULL queue, return fail       */
 	/* TODO Phase 1 */

@@ -1,4 +1,25 @@
-/* TODO Phase 1.1 */
+CC      = gcc
+CFLAGS 	= -m64 -Wall -Werror
+AR      = ar
+AFLAGS  = rc
+HEADERS = queue.h 
+SOURCES = queue.c
+OBJECTS = $(SOURCES:.c=.o)
+TARGET  = libuthread.a
+ 
+default: all
 
-all: libuthread.a
+all: $(SOURCES) $(TARGET)
+
+clean:
+	rm -f $(OBJECTS)
+	rm -f $(TARGET)
+
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(TARGET): $(OBJECTS)
+	$(AR) $(AFLAGS) $(TARGET) $(OBJECTS)
+	ranlib $(TARGET)
+
 
