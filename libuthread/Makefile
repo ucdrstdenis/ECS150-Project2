@@ -2,8 +2,10 @@ CC      = gcc
 CFLAGS 	= -Werror
 AR      = ar
 AFLAGS  = rc
-HEADERS = queue.h context.h semaphore.h preempt.h uthread.h
-SOURCES = queue.c context.c semaphore.c preempt.c uthread.c
+HEADERS = queue.h context.h uthread.h 
+#semaphore.h uthread.h preempt.h
+SOURCES = queue.c context.c uthread.c 
+#semaphore.c uthread.c preempt.c
 OBJECTS = $(SOURCES:.c=.o)
 TARGET  = libuthread.a
  
@@ -13,7 +15,7 @@ all: $(SOURCES) $(TARGET)
 
 clean:
 	rm -f $(OBJECTS)
-	#rm -f $(TARGET)
+	rm -f $(TARGET)
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<

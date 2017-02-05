@@ -7,9 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <uthread.h>
-#include "uthread.h"			//TODO, remove soft link in directory AND
-//GET #include <uthread.h> to work
+//#include <uthread.h>
+#include "libuthread/uthread.h"
 
 void hello(void* arg)
 {
