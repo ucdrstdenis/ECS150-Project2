@@ -13,8 +13,9 @@ typedef struct node {                                   /* Thread item          
 } node;
 
 typedef struct queue {                                  /* Define queue FIFO structure          */
-    node *head;                                         /* pointer to FIFO front                */
+    node *head;                                         /* Pointer to FIFO front                */
     node *tail;                                         /* Pointer to FIFO back                 */
+    int length;                                         /* Holds length of the queue            */
 } queue;
 /* **************************************************** */
 /* **************************************************** */
@@ -27,6 +28,8 @@ queue_t queue_create(void)
 
     Q->head = NULL;                                     /* Set the head                         */
     Q->tail = NULL;                                     /* Set the tail                         */
+    Q->length = 0;                                      /* Set the queue length                 */
+
     return Q;                                           /* Return the pointer                   */
 }
 /* **************************************************** */
@@ -38,6 +41,7 @@ int queue_destroy(queue_t queue)
     if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
     if (queue->head != NULL)    return -1;              /* Queue is not empty, return fail      */
     if (queue->tail != NULL)    return -1;              /* Queue is not empty, return fail      */
+    if (queue->length != 0)     return -1;              /* Queue length isn't 0, return fail    */
 
     free(queue);                                        /* Deallocate the memory                */
     return 0;                                           /* Return success                       */
@@ -61,6 +65,7 @@ int queue_enqueue(queue_t queue, void *data)
     pnode->data = data;                                 /* Set the pointer to the data          */
     pnode->next = queue->head;                          /* Last node points back to the head    */
     queue->tail = pnode;                                /* Point the tail to the new node       */
+    queue->length++;                                    /* Increment the queue  length          */
 
     return 0;                                           /* Return success                       */
 }
@@ -71,9 +76,11 @@ int queue_enqueue(queue_t queue, void *data)
 int queue_dequeue(queue_t queue, void **data)
 {
     if (queue == NULL)          return -1;              /* Passed NULL, return fail             */
+    if (queue->head == NULL)    return -1;              /* Queue head is null, return fail      */
+    if (queue->tail == NULL)    return -1;              /* Queue tail is null, return fail      */
 
-
-	/* TODO Phase 1 */
+    *data = queue->head->data;                          /* Store the data pointer               */
+    queue_delete(queue, queue->head->data);             /* Remove the node from the queue       */
 
     return 0;                                           /* Return success                       */
 }
@@ -83,25 +90,26 @@ int queue_dequeue(queue_t queue, void **data)
 /* **************************************************** */
 int queue_delete(queue_t queue, void *data)
 {
-    node *curr, *prev;                                  /* Current node to iterate over         */
+    node *curr, *tmp;                                   /* Current node to iterate over         */
 
     if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
     if (queue->head == NULL)    return -1;              /* Queue head is NULL, return fail      */
 
     curr = queue->head;                                 /* Current node is the head             */
-    prev = NULL;                                        /* Previous node                        */
+    tmp = NULL;                                         /* Temporary node                       */
 
     while(curr->next != queue->head) {                  /* While more items in the queue        */
         if (curr->data == data) {                       /* If data is found                     */
-            prev = curr->next;                          /* Store pointer to next node           */
-            curr->data = curr->next->data;              /* Overwrite data w/ next node data     */
-            curr->next = curr->next->next;              /* Overwrite next w/ next node next     */
-            free(prev);                                 /* Delete the next node                 */
+            tmp = curr->next;                           /* Store pointer to next node           */
+            curr->data = tmp->data;                     /* Overwrite data w/ next node data     */
+            curr->next = tmp->next;                     /* Overwrite next w/ next node next     */
+            free(tmp);                                  /* Delete the tmp node                  */
             if (curr->next == queue->head)              /* If node deleted was the tail         */
                 queue->tail = curr;                     /* Update the tail pointer              */
+            queue->length--;                            /* Update the queue length              */
             return 0;                                   /* Data was found, return success       */
         }
-        prev = curr;                                    /* Save the node as the previous node   */
+        tmp = curr;                                     /* Save node as temporary node          */
         curr = curr->next;                              /* Iterate to next node                 */
     }
 
@@ -110,10 +118,11 @@ int queue_delete(queue_t queue, void *data)
             queue->head = NULL;                         /* Nullify the head                     */
             queue->tail = NULL;                         /* Nullify the tail                     */
         } else {                                        /* Otherwise, will delete current tail  */
-            queue->tail = prev;                         /* Update the queue's tail pointer      */
-            prev->next = queue->head;                   /* Set new tail->next to point to head  */
+            queue->tail = tmp;                          /* Update the queue's tail pointer      */
+            tmp->next = queue->head;                    /* Set new tail->next to point to head  */
         }
         free(curr);                                     /* Delete the node                      */
+        queue->length--;                                /* Update the queue length              */
         return 0;                                       /* Data was found, return success       */
     }
 
@@ -125,38 +134,37 @@ int queue_delete(queue_t queue, void *data)
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
-    if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
+    node *curr, *tmp;                                   /* Define node pointers                 */
+
     if (func == NULL)           return -1;              /* Passed NULL function, return fail    */
+    if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
+    if (queue->head == NULL)    return  0;              /* Nothing to iterate, return success   */
 
+    curr = queue->head;                                 /* Set node pointer to head of queue    */
+    tmp  = NULL;                                        /* Set temporary pointer                */
 
+	while (curr->next != queue->head) {                 /* Iterate through the queue            */
+	    tmp = curr->next;                               /* Store next pointer in case deleted   */
+	    func(queue, curr->data);                        /* Call the function                    */
 
-	/* TODO Phase 1 */
+	    if (tmp == curr->next)                          /* If the node was NOT deleted          */
+	        curr = curr->next;                          /* Iterate to next node                 */
+	}
 
+	func(queue,curr->data);                             /* Call function for last item in queue */
 
     return 0;                                           /* Return success                       */
 }
 /* **************************************************** */
-
 /* **************************************************** */
 /*                     Queue Length                     */
 /* **************************************************** */
 int queue_length(queue_t queue)
 {
-    int length = 1;
-    node *curr;
-
     if (queue == NULL)          return -1;              /* Passed NULL queue, return fail       */
     if (queue->head == NULL)    return  0;              /* Queue head is NULL, length is 0      */
     if (queue->tail == NULL)    return -1;              /* Q head not NULL, tail is NULL, fail  */
 
-    curr = queue->head;                                 /* Current node to iterate over         */
-
-    while(curr->next != queue->head) {                  /* While more items in the queue        */
-        length++;                                       /* Increment the length                 */
-        curr = curr->next;                              /* Get the next node in the queue       */
-        if (curr == NULL)       return -1;              /* Node improperly set, return fail     */
-    }
-
-    return length;                                      /* Return the length of the queue       */
+    return queue->length;                               /* Return the length of the queue       */
 }
 /* **************************************************** */
