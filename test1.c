@@ -8,6 +8,8 @@
 #include <stdlib.h>
 
 #include <uthread.h>
+#include "uthread.h"			//TODO, remove soft link in directory AND
+//GET #include <uthread.h> to work
 
 void hello(void* arg)
 {

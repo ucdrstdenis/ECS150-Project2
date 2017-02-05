@@ -61,20 +61,20 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
 
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
 
-    if(queue_dequeue(ReadyQ, &nextTCB)) {               /* Get the next TCB from the Ready queue    */
+    if(queue_dequeue(ReadyQ, (void **)&nextTCB)) {               /* Get the next TCB from the Ready queue    */
         // Nothing to run, go back to running old thread
     } else {
         runTCB = uthread_current();                     /* Get currently running thread             */
         if (runTCB == NULL) return;                     /* TODO what happens if nothing running     */
-        runTCB->state = READY;                          /* Change state of running TCB              */
-        queue_dequeue(RunningQ, &runTCB);               /* Remove thread from the running queue     */
-        queue_enqueue(ReadyQ, runTCB);                  /* Add running thread to the ready queue    */
+        runTCB->state = READY;                          /* Change the state of running TCB          */
+        queue_dequeue(RunningQ, (void**) &runTCB);      /* Remove thread from the running queue     */
+        queue_enqueue(ReadyQ, (void*) runTCB);          /* Add running thread to the ready queue    */
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
-        queue_enqueue(RunningQ, nextTCB);               /* Add the next thread to the running queue */
+        queue_enqueue(RunningQ, (void*) nextTCB);       /* Add the next thread to the running queue */
         nextTCB->state = RUNNING;                       /* Change the state of the next TCB         */
     }
 
-    while(!queue_dequeue(FinishedQ, &doneTCB)) {        /* While threads to deQ exist on finishedQ  */
+    while(!queue_dequeue(FinishedQ,(void**)&doneTCB)) { /* While threads to deQ exist on finishedQ  */
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
@@ -95,13 +95,13 @@ int uthread_create(uthread_func_t func, void *arg)
     tcb->func    = func;                                /* Set the TCB function pointer             */
     tcb->arg     = arg;                                 /* Set the TCB func argument pointer        */
     tcb->state   = READY;                               /* Set the TCB state                        */
-    queue_enqueue(ReadyQ, tcb);                         /* Add the thread to the ready queue        */
+    queue_enqueue(ReadyQ, (void*) tcb);                 /* Add the thread to the ready queue        */
 
     /* Initialize user-level thread context */
     if (uthread_ctx_init(tcb->uctx, tcb->stack, func, arg))
         return FAIL;
 
-    return BOOYA;                                       /* Return success                           */
+    return SUCCESS;                                       /* Return success                           */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -109,20 +109,20 @@ int uthread_create(uthread_func_t func, void *arg)
 /* **************************************************** */
 void uthread_exit(void)
 {
-    utcb *me, next;                                     /* Declare TCB pointers                     */
+    utcb *me, *next;                                    /* Declare TCB pointers                     */
 
     me = uthread_current();                             /* Get currently running thread             */
-    queue_dequeue(RunningQ, &me);                       /* Remove thread from the running queue     */
+    queue_dequeue(RunningQ, (void **) &me);             /* Remove thread from the running queue     */
     me->state = FINISHED;                               /* Set the state                            */
-    queue_enqueue(FinishedQ, me);                       /* Add the thread to the finished queue     */
+    queue_enqueue(FinishedQ, (void*) me);               /* Add the thread to the finished queue     */
 
-    queue_dequeue(ReadyQ, &next);                       /* Get the next TCB from the ready queue    */
+    queue_dequeue(ReadyQ, (void**) &next);              /* Get the next TCB from the ready queue    */
     next->state = RUNNING;                              /* Update the next TCB's state              */
-    queue_enqueue(RunningQ, next);                      /* Add the next TCB to the running queue    */
+    queue_enqueue(RunningQ, (void*) next);              /* Add the next TCB to the running queue    */
 
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
 
-    while(!queue_dequeue(FinishedQ, &me)) {             /* While threads to deQ exist on finishedQ  */
+    while(!queue_dequeue(FinishedQ, (void**) &me)) {    /* While threads to deQ exist on finishedQ  */
         uthread_ctx_destroy_stack(me->stack);           /* Destroy the stack                        */
         free(me->uctx);                                 /* Free user-level thread context           */
         free(me);                                       /* Free TCB from memory                     */
@@ -157,7 +157,15 @@ void uthread_unblock(struct uthread_tcb *uthread)
 /* **************************************************** */
 struct uthread_tcb *uthread_current(void)
 {
-    return (utcb*) RunningQ->head;                      /* Return pointer to currently running TCB         */
+    //struct uthread_tcb **current;
+    //(void**) current;
+    //*current = (struct uthread_tcb*) RunningQ->head->data;
+    //TODO don't use queue_dequeue and enqueue. 
+    utcb *current;
+    queue_dequeue(RunningQ, (void**) &current);         /* Get the next TCB from the ready queue           */
+    queue_enqueue(RunningQ, (void*) current);
+
+    return current;                                     /* Return pointer to currently running TCB         */
 }
 /* **************************************************** */
 /* **************************************************** */
