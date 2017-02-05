@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -5,6 +6,7 @@
 #include "context.h"
 #include "preempt.h"
 #include "uthread.h"
+
 
 /* Size of the stack for a thread (in bytes) */
 #define UTHREAD_STACK_SIZE 32768

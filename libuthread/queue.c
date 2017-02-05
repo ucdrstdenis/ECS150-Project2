@@ -5,7 +5,6 @@
 
 #define FAIL        -1                                  /* Fail code                            */
 #define SUCCESS      0                                  /* Success code                         */
-#define BOOYA        0                                  /* Success code                         */
 
 /* **************************************************** */
 /*                   Queue Structures                   */

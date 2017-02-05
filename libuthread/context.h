@@ -1,10 +1,9 @@
 #ifndef _CONTEXT_H
 #define _CONTEXT_H
 
+#define _XOPEN_SOURCE 1		/* Keep OSX Compilers happy */
 #include <ucontext.h>
-
 #include "uthread.h"
-
 #ifdef _UTHREAD_PRIVATE
 
 /*
