@@ -144,15 +144,15 @@ int queue_iterate(queue_t queue, queue_func_t func)
     curr = queue->head;                                 /* Set node pointer to head of queue    */
     tmp  = NULL;                                        /* Set temporary pointer                */
 
-	while (curr->next != queue->head) {                 /* Iterate through the queue            */
-	    tmp = curr->next;                               /* Store next pointer in case deleted   */
-	    func(queue, curr->data);                        /* Call the function                    */
+    while (curr->next != queue->head) {                 /* Iterate through the queue            */
+        tmp = curr->next;                               /* Store next pointer in case deleted   */
+        func(queue, curr->data);                        /* Call the function                    */
 
-	    if (tmp == curr->next)                          /* If the node was NOT deleted          */
-	        curr = curr->next;                          /* Iterate to next node                 */
-	}
+        if (tmp == curr->next)                          /* If the node was NOT deleted          */
+            curr = curr->next;                          /* Iterate to next node                 */
+    }
 
-	func(queue,curr->data);                             /* Call function for last item in queue */
+    func(queue,curr->data);                             /* Call function for last item in queue */
 
     return 0;                                           /* Return success                       */
 }
