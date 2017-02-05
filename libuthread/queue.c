@@ -81,7 +81,6 @@ int queue_dequeue(queue_t queue, void **data)
 
     *data = queue->head->data;                          /* Store the data pointer               */
 
-    //@TODO, should be O(1), don'e use q_delete
     if(queue_delete(queue, queue->head->data))          /* Remove the node from the queue       */
         return -1;                                      /* queue_delete failed, return fail     */
 
@@ -148,13 +147,13 @@ int queue_iterate(queue_t queue, queue_func_t func)
 
     while (curr->next != queue->head) {                 /* Iterate through the queue            */
         tmp = curr->next;                               /* Store next pointer in case deleted   */
-        func(queue, curr->data);                        /* Call the function                    */
+        func(curr->data);                               /* Call the function                    */
 
         if (tmp == curr->next)                          /* If the node was NOT deleted          */
             curr = curr->next;                          /* Iterate to next node                 */
     }
 
-    func(queue,curr->data);                             /* Call function for last item in queue */
+    func(curr->data);                                   /* Call function for last item in queue */
 
     return 0;                                           /* Return success                       */
 }
