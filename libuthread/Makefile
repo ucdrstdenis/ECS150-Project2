@@ -2,8 +2,8 @@ CC      = gcc
 CFLAGS 	= -m64 -Wall -Werror
 AR      = ar
 AFLAGS  = rc
-HEADERS = queue.h uthread.h
-SOURCES = queue.c uthread.c
+HEADERS = queue.h context.h uthread.h
+SOURCES = queue.c context.c uthread.c
 OBJECTS = $(SOURCES:.c=.o)
 TARGET  = libuthread.a
  

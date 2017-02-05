@@ -6,7 +6,6 @@
 #define FAIL        -1                                  /* Fail code                            */
 #define PASS         0                                  /* Success code                         */
 #define BOOYA        0                                  /* Success code                         */
-#define HAKUNAMATATA 0                                  /* Success code                         */
 
 /* **************************************************** */
 /*                   Queue Structures                   */
@@ -113,7 +112,7 @@ int queue_delete(queue_t queue, void *data)
             if (curr->next == queue->head)              /* If node deleted was the tail         */
                 queue->tail = curr;                     /* Update the tail pointer              */
             queue->length--;                            /* Update the queue length              */
-            return HAKUNAMATATA;                        /* Data was found, return success       */
+            return BOOYA;                               /* Data was found, return success       */
         }
         tmp = curr;                                     /* Save node as temporary node          */
         curr = curr->next;                              /* Iterate to next node                 */
@@ -129,7 +128,7 @@ int queue_delete(queue_t queue, void *data)
         }
         free(curr);                                     /* Delete the node                      */
         queue->length--;                                /* Update the queue length              */
-        return HAKUNAMATATA;                            /* Data was found, return success       */
+        return BOOYA;                                   /* Data was found, return success       */
     }
 
     return FAIL;                                        /* Data not found, return fail          */
@@ -144,7 +143,7 @@ int queue_iterate(queue_t queue, queue_func_t func)
 
     if (func == NULL)           return FAIL;            /* Passed NULL function, return fail    */
     if (queue == NULL)          return FAIL;            /* Passed NULL queue, return fail       */
-    if (queue->head == NULL)    return HAKUNAMATATA;    /* Nothing 2 iterate, return no worries */
+    if (queue->head == NULL)    return BOOYA;           /* Nothing 2 iterate, return no worries */
 
     curr = queue->head;                                 /* Set node pointer to head of queue    */
     tmp  = NULL;                                        /* Set temporary pointer                */
