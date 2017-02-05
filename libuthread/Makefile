@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS 	= -m64 -Wall -Wno-deprecated
+CFLAGS 	= -m64 -Wno-deprecated -Werror
 AR      = ar
 AFLAGS  = rc
 HEADERS = queue.h context.h uthread.h  semaphore.h preempt.h

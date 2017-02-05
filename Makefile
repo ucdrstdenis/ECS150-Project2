@@ -31,7 +31,7 @@ CFLAGS	+= -g
 CFLAGS	+= -pipe
 
 # Include path
-INCLUDE := -I$(UTHREADLIB)
+INCLUDE = -Ilibuthread
 
 # Generate dependencies
 DEPFLAGS = -MMD -MF $(@:.o=.d)
@@ -51,7 +51,7 @@ $(libuthread):
 # Generic rule for linking final applications
 %: %.o $(libuthread)
 	@echo "LD	$@"
-	$(Q)$(CC) $(CFLAGS) -o $@ $< -L$(UTHREADLIB) -luthread
+	$(Q)$(CC) $(CFLAGS) $(INCLUDE) -o $@ $< -L$(UTHREADLIB) -luthread
 
 # Generic rule for compiling objects
 %.o: %.c
