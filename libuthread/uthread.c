@@ -16,8 +16,17 @@
 /* **************************************************** */
 /*                     UThread TCB                      */
 /* **************************************************** */
+typedef enum 
+{
+        READY   = 0x00,
+	RUNNING = 0x01,
+        WAITING = 0x02,
+        DEAD    = 0x03
+} uThread_State;
+
 struct uthread_tcb {
 
+        uThread_State state;                            /* Holds the thread's state */
 	/* TODO Phase 2 */
 
 };
