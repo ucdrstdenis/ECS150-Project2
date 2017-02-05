@@ -80,7 +80,8 @@ int queue_dequeue(queue_t queue, void **data)
     if (queue->tail == NULL)    return -1;              /* Queue tail is null, return fail      */
 
     *data = queue->head->data;                          /* Store the data pointer               */
-    queue_delete(queue, queue->head->data);             /* Remove the node from the queue       */
+    if(queue_delete(queue, queue->head->data))          /* Remove the node from the queue       */
+        return -1;                                      /* queue_delete failed, return fail     */
 
     return 0;                                           /* Return success                       */
 }
