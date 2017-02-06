@@ -1,5 +1,5 @@
 # Target programs
-programs := test1 test2 test3 test4 test5
+programs := test-queue test1 test2 test3 test4 test5
 
 # User-level thread library
 UTHREADLIB=libuthread
@@ -24,7 +24,7 @@ CUR_PWD := $(shell pwd)
 CC	= gcc
 
 # General gcc options
-CFLAGS	:= -Werror
+#CFLAGS	:= -Werror
 #CFLAGS	+= -O2
 CFLAGS	+= -O0
 CFLAGS	+= -g
