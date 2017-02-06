@@ -17,6 +17,7 @@
 /* **************************************************** */
 #define FAIL        -1                                  /* Fail code                                */
 #define SUCCESS      0                                  /* Success code                             */
+
 /* **************************************************** */
 /*                   UThread GLOBALS                    */
 /* **************************************************** */
@@ -97,7 +98,7 @@ int uthread_create(uthread_func_t func, void *arg)
 {
     struct uthread_tcb *tcb = uthread_init(func, arg);  /* Alloc/Init thread control block struct   */
     tcb->stack   = uthread_ctx_alloc_stack();           /* Alloc stack, Set pointer to stack top    */
-    //tcb->state   = READY;                               /* Set the TCB state                        */
+    //tcb->state   = READY;                             /* Set the TCB state                        */
     queue_enqueue(ReadyQ, (void*) tcb);                 /* Add the thread to the ready queue        */
 
     /* Initialize user-level thread context */

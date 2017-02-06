@@ -8,6 +8,9 @@
 #include "semaphore.h"                                  /* sem_t is a pointer to a semaphore */
 #include "uthread.h"
 
+#define FAIL        -1                                  /* Fail code                                */
+#define SUCCESS      0                                  /* Success code                             */
+
 /* **************************************************** */
 /*                 Semaphore Structures                 */
 /* **************************************************** */
@@ -36,7 +39,7 @@ int sem_destroy(sem_t sem)
 {
 	/* TODO Phase 3 */
 
-    return 0;
+    return SUCCESS;
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -46,7 +49,7 @@ int sem_down(sem_t sem)
 {
 	/* TODO Phase 3 */
 
-    return 0;
+    return SUCCESS;
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -56,6 +59,6 @@ int sem_up(sem_t sem)
 {
 	/* TODO Phase 3 */
 
-    return 0;
+    return SUCCESS;
 }
 /* **************************************************** */
