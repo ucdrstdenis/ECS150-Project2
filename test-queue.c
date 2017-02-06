@@ -2,6 +2,11 @@
 #include <queue.h>
 #include <assert.h>
 
+
+/* A few tests can be to create queues, enqueue some items, make sure that these items are dequeued in the same order, delete some items, test the length of the queue, etc.
+*/
+
+/* Below is directly off Piazza */
 queue_t myqueue;
 
 void mycustomfunc(void *data)
@@ -15,8 +20,10 @@ void f()
 {
 	int a = 2;
 	int b = 3;
-	queue_enqueue(myqueue, &a);
-	queue_enqueue(myqueue, &b);
+	
+	myqueue = queue_create();
+	queue_enqueue(myqueue, (void*) &a);
+	queue_enqueue(myqueue, (void*) &b);
 	assert(queue_length(myqueue) == 2);
 
         queue_iterate(myqueue, mycustomfunc);
