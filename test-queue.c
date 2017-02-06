@@ -30,9 +30,20 @@ void f()
 
 	// after iterating, one element has been removed
 	assert(queue_length(myqueue) == 1);
+        printf("Test: queue_length(myqueue)\n");
+	
+	
+	assert(queue_length(NULL) == -1);
+	printf("Test: queue_length(NULL)\n");
 
 	assert(queue_destroy(NULL) == -1);
+	printf("Test: queue_destroy(NULL)\n");
+
+	assert(queue_dequeue(NULL, NULL) == -1);
+	printf("Test: queue_dequeue(NULL, NULL)\n");
+	
 	assert(queue_enqueue(NULL, NULL) == -1);
+	printf("Test: queue_enqueue(NULL, NULL)\n");
 }
 
 
