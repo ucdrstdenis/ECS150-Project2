@@ -18,7 +18,7 @@
 #define FAIL        -1                                  /* Fail code                                */
 #define SUCCESS      0                                  /* Success code                             */
 /* **************************************************** */
-/*                  UThread GLOBALS                     */
+/*                   UThread GLOBALS                    */
 /* **************************************************** */
 static queue_t ReadyQ;                                  /* Global pointer to Ready Queue            */
 static queue_t RunningQ;                                /* Global pointer to Running Queue          */
@@ -48,7 +48,7 @@ struct uthread_tcb {
 typedef struct uthread_tcb utcb;                        /* Typedef for convenience                  */
 /* **************************************************** */
 /* **************************************************** */
-/*                     UThread Yield                    */
+/*                    UThread Yield                     */
 /* **************************************************** */
 void uthread_yield(void)                                /* See Fig 4.14 in Anderson Textbook        */
 {
@@ -77,28 +77,38 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
 }
 /* **************************************************** */
 /* **************************************************** */
+/*                Static UThread Init                   */
+/* **************************************************** */
+static utcb *uthread_init(uthread_func_t func, void *arg)
+{
+    struct uthread_tcb *tcb = malloc(sizeof(utcb));     /* Alloc thread control block structure     */
+    tcb->uctx    = malloc(sizeof(uthread_ctx_t));       /* Alloc user-level thread context struct   */
+    tcb->tcb     = tcb;                                 /* Set the TCB pointer to itself            */
+    tcb->func    = func;                                /* Set the TCB function pointer             */
+    tcb->arg     = arg;                                 /* Set the TCB function argument pointer    */
+    tcb->state   = READY;                               /* Set the TCB state                        */
+    return tcb;									        /* Return pointer to the TCB 				*/
+}
+/* **************************************************** */
+/* **************************************************** */
 /*                   UThread Create                     */
 /* **************************************************** */
 int uthread_create(uthread_func_t func, void *arg)
 {
-    struct uthread_tcb *tcb = malloc(sizeof(utcb));     /* Alloc thread control block structure     */
-    tcb->uctx    = malloc(sizeof(uthread_ctx_t));       /* Alloc user-level thread context struct   */
+    struct uthread_tcb *tcb = uthread_init(func, arg);  /* Alloc/Init thread control block struct   */
     tcb->stack   = uthread_ctx_alloc_stack();           /* Alloc stack, Set pointer to stack top    */
-    tcb->tcb     = tcb;                                 /* Set the TCB pointer to itself            */
-    tcb->func    = func;                                /* Set the TCB function pointer             */
-    tcb->arg     = arg;                                 /* Set the TCB func argument pointer        */
-    tcb->state   = READY;                               /* Set the TCB state                        */
+    //tcb->state   = READY;                               /* Set the TCB state                        */
     queue_enqueue(ReadyQ, (void*) tcb);                 /* Add the thread to the ready queue        */
 
     /* Initialize user-level thread context */
     if (uthread_ctx_init(tcb->uctx, tcb->stack, func, arg))
         return FAIL;
 
-    return SUCCESS;                                       /* Return success                           */
+    return SUCCESS;                                     /* Return success                           */
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                     UThread Exit                     */
+/*                    UThread Exit                      */
 /* **************************************************** */
 void uthread_exit(void)
 {
@@ -151,7 +161,7 @@ void uthread_unblock(struct uthread_tcb *uthread)
 struct uthread_tcb *uthread_current(void)
 {
     
-    //TODO don't use queue_dequeue and qnqueue_heaere */
+    //TODO don't use queue_dequeue or queue_enqueue here */
     utcb *current;
     queue_dequeue(RunningQ, (void**) &current);         /* Get the next TCB from the ready queue           */
     queue_enqueue(RunningQ, (void*) current);
@@ -164,19 +174,26 @@ struct uthread_tcb *uthread_current(void)
 /* **************************************************** */
 void uthread_start(uthread_func_t start, void *arg)
 {
-    ReadyQ    = queue_create();                         /* Alloc/Init global pointer to Ready queue        */
+	utcb *startThread = uthread_init(start, arg);		/* Alloc/Init a TCB to the start thread 		   */
+
+	/* Create the global queues */
+    /* TODO create using loop   */
+	ReadyQ    = queue_create();                         /* Alloc/Init global pointer to Ready queue        */
     RunningQ  = queue_create();                         /* Alloc/Init global pointer to Running queue      */
     WaitingQ  = queue_create();                         /* Alloc/Init global pointer to Waiting queue      */
     FinishedQ = queue_create();                         /* Alloc/Init global pointer to Finished queue     */
 
+    
+    // while() {
 
-    
-    
-    uthread_create(start, arg);                         /* Create and initialize a new thread              */
+    // uthread_create(start, arg);                         /* Create and initialize a new thread              */
 
 	/* TODO Phase 2 */
 
+    //  }
 
+    /* Destroy the queues */
+    /* TODO Put this in loop */
     queue_destroy(FinishedQ);                           /* Destroy the global ready queue                   */
     queue_destroy(WaitingQ);                            /* Destroy the global waiting queue                 */
     queue_destroy(RunningQ);                            /* Destroy the global running queue                 */
