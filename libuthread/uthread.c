@@ -21,10 +21,10 @@
 /* **************************************************** */
 /*                   UThread GLOBALS                    */
 /* **************************************************** */
-queue_t ReadyQ;                                  		/* Global pointer to Ready Queue            */
-queue_t RunQ;                                    		/* Global pointer to Running Queue          */
-queue_t WaitQ;                                  		/* Global pointer to Wait Queue             */
-queue_t DoneQ;                                   		/* Global pointer to Done Queue             */
+queue_t ReadyQ;											/* Global pointer to Ready Queue            */
+queue_t RunQ;											/* Global pointer to Running Queue          */
+queue_t WaitQ;											/* Global pointer to Wait Queue             */
+queue_t DoneQ;											/* Global pointer to Done Queue             */
 
 /* **************************************************** */
 /*                  UThread Structures                  */
@@ -68,7 +68,7 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
         nextTCB->state = RUNNING;                       /* Change the state of the next TCB         */
     }
 
-    while(!queue_dequeue(DoneQ,(void**)&doneTCB)) { /* While threads to deQ exist on DoneQ  */
+    while(!queue_dequeue(DoneQ,(void**)&doneTCB)) {		/* While threads to deQ exist on DoneQ		*/
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
@@ -88,7 +88,7 @@ static utcb *uthread_init(uthread_func_t func, void *arg)
     tcb->func    = func;                                /* Set the TCB function pointer             */
     tcb->arg     = arg;                                 /* Set the TCB function argument pointer    */
     tcb->state   = READY;                               /* Set the TCB state                        */
-    return tcb;									        /* Return pointer to the TCB 				*/
+    return tcb;											/* Return pointer to the TCB				*/
 }
 /* **************************************************** */
 /* **************************************************** */
