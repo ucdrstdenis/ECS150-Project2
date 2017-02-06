@@ -17,7 +17,6 @@
 /* **************************************************** */
 #define FAIL        -1                                  /* Fail code                                */
 #define SUCCESS      0                                  /* Success code                             */
-#define ZERO         0                                  /* Success code                             */
 /* **************************************************** */
 /*                  UThread GLOBALS                     */
 /* **************************************************** */
@@ -32,7 +31,7 @@ static queue_t FinishedQ;                               /* Global pointer to Fin
 typedef enum  {
     READY    = 0x00,                                    /* Ready list, Regs in TCB                  */
     RUNNING  = 0x01,                                    /* Running list, Regs in Proc               */
-    WAITING  = 0x02,                                    /* Sync Vars WL, Regs in TCB                */
+    BLOCKED  = 0x02,                                    /* Sync Vars WL, Regs in TCB                */
     FINISHED = 0x03                                     /* Finished list, Regs deleted              */
 } uthread_state_t;
 
@@ -44,8 +43,6 @@ struct uthread_tcb {
     int exitCode;                                       /* Thread exit code                         */
     void *arg;                                          /* Pointer to thread function arg           */
     void *stack;                                        /* Pointer to top_of_stack                  */
-    void *sp;                                           /* Stack pointer                            */
-    void *pc;                                           /* Thread program counter                   */
 };
 
 typedef struct uthread_tcb utcb;                        /* Typedef for convenience                  */
@@ -59,9 +56,7 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
 
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
 
-    if(queue_dequeue(ReadyQ, (void **)&nextTCB)) {               /* Get the next TCB from the Ready queue    */
-        // Nothing to run, go back to running old thread
-    } else {
+    if(!queue_dequeue(ReadyQ, (void **)&nextTCB)) {     /* Get the next TCB from the Ready queue    */
         runTCB = uthread_current();                     /* Get currently running thread             */
         if (runTCB == NULL) return;                     /* TODO what happens if nothing running     */
         runTCB->state = READY;                          /* Change the state of running TCB          */
@@ -155,10 +150,8 @@ void uthread_unblock(struct uthread_tcb *uthread)
 /* **************************************************** */
 struct uthread_tcb *uthread_current(void)
 {
-    //struct uthread_tcb **current;
-    //(void**) current;
-    //*current = (struct uthread_tcb*) RunningQ->head->data;
-    //TODO don't use queue_dequeue and enqueue. 
+    
+    //TODO don't use queue_dequeue and qnqueue_heaere */
     utcb *current;
     queue_dequeue(RunningQ, (void**) &current);         /* Get the next TCB from the ready queue           */
     queue_enqueue(RunningQ, (void*) current);
@@ -176,9 +169,13 @@ void uthread_start(uthread_func_t start, void *arg)
     WaitingQ  = queue_create();                         /* Alloc/Init global pointer to Waiting queue      */
     FinishedQ = queue_create();                         /* Alloc/Init global pointer to Finished queue     */
 
+
+    
+    
     uthread_create(start, arg);                         /* Create and initialize a new thread              */
 
 	/* TODO Phase 2 */
+
 
     queue_destroy(FinishedQ);                           /* Destroy the global ready queue                   */
     queue_destroy(WaitingQ);                            /* Destroy the global waiting queue                 */
