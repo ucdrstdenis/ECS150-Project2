@@ -24,14 +24,14 @@ CUR_PWD := $(shell pwd)
 CC	= gcc
 
 # General gcc options
-#CFLAGS	:= -Werror
+CFLAGS	:= -Werror
 #CFLAGS	+= -O2
 CFLAGS	+= -O0
 CFLAGS	+= -g
 CFLAGS	+= -pipe
 
 # Include path
-INCLUDE = -Ilibuthread
+INCLUDE := -I$(UTHREADLIB)
 
 # Generate dependencies
 DEPFLAGS = -MMD -MF $(@:.o=.d)
@@ -51,7 +51,7 @@ $(libuthread):
 # Generic rule for linking final applications
 %: %.o $(libuthread)
 	@echo "LD	$@"
-	$(Q)$(CC) $(CFLAGS) $(INCLUDE) -o $@ $< -L$(UTHREADLIB) -luthread
+	$(Q)$(CC) $(CFLAGS) -o $@ $< -L$(UTHREADLIB) -luthread
 
 # Generic rule for compiling objects
 %.o: %.c
