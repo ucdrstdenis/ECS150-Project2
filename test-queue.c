@@ -16,7 +16,7 @@ void mycustomfunc(void *data)
 		queue_delete(myqueue, x);
 }
 
-void f()
+void test_queue()
 {
 	int a = 2;
 	int b = 3;
@@ -51,6 +51,6 @@ void f()
 
 int main (void)
 {
-    f();
+    test_queue();
     return 0;
 }
