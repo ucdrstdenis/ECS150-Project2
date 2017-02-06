@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <queue.h>
 #include <assert.h>
 
+#include <queue.h>
 
 /* A few tests can be to create queues, enqueue some items, make sure that these items are dequeued in the same order, delete some items, test the length of the queue, etc.
 */

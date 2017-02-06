@@ -21,10 +21,10 @@
 /* **************************************************** */
 /*                   UThread GLOBALS                    */
 /* **************************************************** */
-static queue_t ReadyQ;                                  /* Global pointer to Ready Queue            */
-static queue_t RunningQ;                                /* Global pointer to Running Queue          */
-static queue_t WaitingQ;                                /* Global pointer to Waiting Queue          */
-static queue_t FinishedQ;                               /* Global pointer to Finished Queue         */
+queue_t ReadyQ;                                  		/* Global pointer to Ready Queue            */
+queue_t RunQ;                                    		/* Global pointer to Running Queue          */
+queue_t WaitQ;                                  		/* Global pointer to Wait Queue             */
+queue_t DoneQ;                                   		/* Global pointer to Done Queue             */
 
 /* **************************************************** */
 /*                  UThread Structures                  */
@@ -61,14 +61,14 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
         runTCB = uthread_current();                     /* Get currently running thread             */
         if (runTCB == NULL) return;                     /* TODO what happens if nothing running     */
         runTCB->state = READY;                          /* Change the state of running TCB          */
-        queue_dequeue(RunningQ, (void**) &runTCB);      /* Remove thread from the running queue     */
+        queue_dequeue(RunQ, (void**) &runTCB);          /* Remove thread from the running queue     */
         queue_enqueue(ReadyQ, (void*) runTCB);          /* Add running thread to the ready queue    */
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
-        queue_enqueue(RunningQ, (void*) nextTCB);       /* Add the next thread to the running queue */
+        queue_enqueue(RunQ, (void*) nextTCB);           /* Add the next thread to the running queue */
         nextTCB->state = RUNNING;                       /* Change the state of the next TCB         */
     }
 
-    while(!queue_dequeue(FinishedQ,(void**)&doneTCB)) { /* While threads to deQ exist on finishedQ  */
+    while(!queue_dequeue(DoneQ,(void**)&doneTCB)) { /* While threads to deQ exist on DoneQ  */
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
@@ -116,17 +116,17 @@ void uthread_exit(void)
     utcb *me, *next;                                    /* Declare TCB pointers                     */
 
     me = uthread_current();                             /* Get currently running thread             */
-    queue_dequeue(RunningQ, (void **) &me);             /* Remove thread from the running queue     */
+    queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
     me->state = FINISHED;                               /* Set the state                            */
-    queue_enqueue(FinishedQ, (void*) me);               /* Add the thread to the finished queue     */
+    queue_enqueue(DoneQ, (void*) me);                   /* Add the thread to the finished queue     */
 
     queue_dequeue(ReadyQ, (void**) &next);              /* Get the next TCB from the ready queue    */
     next->state = RUNNING;                              /* Update the next TCB's state              */
-    queue_enqueue(RunningQ, (void*) next);              /* Add the next TCB to the running queue    */
+    queue_enqueue(RunQ, (void*) next);                  /* Add the next TCB to the running queue    */
 
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
 
-    while(!queue_dequeue(FinishedQ, (void**) &me)) {    /* While threads to deQ exist on finishedQ  */
+    while(!queue_dequeue(DoneQ, (void**) &me)) {        /* While threads to deQ exist on DoneQ  	*/
         uthread_ctx_destroy_stack(me->stack);           /* Destroy the stack                        */
         free(me->uctx);                                 /* Free user-level thread context           */
         free(me);                                       /* Free TCB from memory                     */
@@ -162,12 +162,12 @@ void uthread_unblock(struct uthread_tcb *uthread)
 struct uthread_tcb *uthread_current(void)
 {
     
-    //TODO don't use queue_dequeue or queue_enqueue here */
-    utcb *current;
-    queue_dequeue(RunningQ, (void**) &current);         /* Get the next TCB from the ready queue           */
-    queue_enqueue(RunningQ, (void*) current);
+    //TODO don't use queue_dequeue / queue_enqueue here */
+	struct uthread_tcb *current;
+    queue_dequeue(RunQ, (void**) &current);       	    /* Get the next TCB from the ready queue           */
+    queue_enqueue(RunQ, (void*) current);
 
-    return current;                                     /* Return pointer to currently running TCB         */
+    return current;         							/* Return pointer to currently running TCB         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -175,29 +175,24 @@ struct uthread_tcb *uthread_current(void)
 /* **************************************************** */
 void uthread_start(uthread_func_t start, void *arg)
 {
-	utcb *startThread = uthread_init(start, arg);		/* Alloc/Init a TCB to the start thread 		   */
+	unsigned int i;
+	queue_t QArray[] = {ReadyQ, RunQ, WaitQ, DoneQ};	/* Declare array of queue pointers 				   	*/
 
 	/* Create the global queues */
-    /* TODO create using loop   */
-	ReadyQ    = queue_create();                         /* Alloc/Init global pointer to Ready queue        */
-    RunningQ  = queue_create();                         /* Alloc/Init global pointer to Running queue      */
-    WaitingQ  = queue_create();                         /* Alloc/Init global pointer to Waiting queue      */
-    FinishedQ = queue_create();                         /* Alloc/Init global pointer to Finished queue     */
+	for (i = 0; i < 4; i++)			     				/* For each item in QArray[] 					  	*/
+		QArray[i] = queue_create();						/* Alloc/Init global pointer for each queue        	*/
 
-    
+	utcb *startThread = uthread_init(start, arg);		/* Alloc/Init a TCB to the start thread 		   	*/
     // while() {
 
-    // uthread_create(start, arg);                         /* Create and initialize a new thread              */
+    // uthread_create(start, arg);                     /* Create and initialize a new thread              	*/
 
 	/* TODO Phase 2 */
 
     //  }
 
     /* Destroy the queues */
-    /* TODO Put this in loop */
-    queue_destroy(FinishedQ);                           /* Destroy the global ready queue                   */
-    queue_destroy(WaitingQ);                            /* Destroy the global waiting queue                 */
-    queue_destroy(RunningQ);                            /* Destroy the global running queue                 */
-    queue_destroy(ReadyQ);                              /* Destroy the global ready queue                   */
+    for (i = 0; i < 4; i++)
+    	queue_destroy(QArray[i]);						/* Destroy each queue in QArray[] 					*/
 }
 /* **************************************************** */
