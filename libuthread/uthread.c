@@ -21,10 +21,10 @@
 /* **************************************************** */
 /*                   UThread GLOBALS                    */
 /* **************************************************** */
-queue_t ReadyQ;											/* Global pointer to Ready Queue            */
-queue_t RunQ;											/* Global pointer to Running Queue          */
-queue_t WaitQ;											/* Global pointer to Wait Queue             */
-queue_t DoneQ;											/* Global pointer to Done Queue             */
+queue_t ReadyQ;                                         /* Global pointer to Ready Queue            */
+queue_t RunQ;                                           /* Global pointer to Running Queue          */
+queue_t WaitQ;                                          /* Global pointer to Wait Queue             */
+queue_t DoneQ;                                          /* Global pointer to Done Queue             */
 
 /* **************************************************** */
 /*                  UThread Structures                  */
