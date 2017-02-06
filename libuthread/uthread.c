@@ -68,7 +68,7 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
         nextTCB->state = RUNNING;                       /* Change the state of the next TCB         */
     }
 
-    while(!queue_dequeue(DoneQ,(void**)&doneTCB)) {		/* While threads to deQ exist on DoneQ      */
+    while(!queue_dequeue(DoneQ,(void**)&doneTCB)) {     /* While threads to deQ exist on DoneQ      */
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
@@ -126,7 +126,7 @@ void uthread_exit(void)
 
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
 
-    while(!queue_dequeue(DoneQ, (void**) &me)) {        /* While threads to deQ exist on DoneQ  	*/
+    while(!queue_dequeue(DoneQ, (void**) &me)) {        /* While threads to deQ exist on DoneQ      */
         uthread_ctx_destroy_stack(me->stack);           /* Destroy the stack                        */
         free(me->uctx);                                 /* Free user-level thread context           */
         free(me);                                       /* Free TCB from memory                     */
@@ -180,7 +180,7 @@ void uthread_start(uthread_func_t start, void *arg)
 
     /* Create the global queues */
     for (i = 0; i < 4; i++)                             /* For each item in QArray[]                        */
-        QArray[i] = queue_create();                     /* Alloc/Init global pointer for each queue        	*/
+        QArray[i] = queue_create();                     /* Alloc/Init global pointer for each queue         */
 
     utcb *startThread = uthread_init(start, arg);       /* Alloc/Init a TCB to the start thread             */
     // while() {
@@ -193,6 +193,6 @@ void uthread_start(uthread_func_t start, void *arg)
 
     /* Destroy the queues */
     for (i = 0; i < 4; i++)
-    	queue_destroy(QArray[i]);						/* Destroy each queue in QArray[] 					*/
+    	queue_destroy(QArray[i]);                       /* Destroy each queue in QArray[]                    */
 }
 /* **************************************************** */
