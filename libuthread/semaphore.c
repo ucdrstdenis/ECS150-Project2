@@ -8,16 +8,18 @@
 #include "semaphore.h"                                  /* sem_t is a pointer to a semaphore */
 #include "uthread.h"
 
-#define FAIL        -1                                  /* Fail code                                */
-#define SUCCESS      0                                  /* Success code                             */
+/* **************************************************** */
+/*                 Semaphore #DEFINES                   */
+/* **************************************************** */
+#define FAIL        -1                                  /* Fail code                            */
+#define SUCCESS      0                                  /* Success code                         */
 
 /* **************************************************** */
 /*                 Semaphore Structures                 */
 /* **************************************************** */
 typedef struct semaphore {
-
-	/* TODO Phase 3 */
-
+    size_t count;                                       /* Semaphore count                      */
+    queue_t WaitQ;                                      /* Queue of threads waiting for sem     */
 } semaphore;
 /* **************************************************** */
 /* **************************************************** */
@@ -26,9 +28,8 @@ typedef struct semaphore {
 sem_t sem_create(size_t count)
 {
     sem_t sem = (semaphore*) malloc(sizeof(semaphore));
-
-	/* TODO Phase 3 */
-
+    sem->count = count;                                 /* Semaphore Count                      */
+    sem->WaitQ = queue_create();                        /* Queue of waiting threads             */
     return sem;
 }
 /* **************************************************** */
@@ -37,9 +38,9 @@ sem_t sem_create(size_t count)
 /* **************************************************** */
 int sem_destroy(sem_t sem)
 {
-	/* TODO Phase 3 */
-
-    return SUCCESS;
+    if(queue_destroy(sem->WaitQ)) return FAIL;          /* Queue destroy failed, return FAIL    */
+	free(sem);                                          /* Deallocate the memory                */
+    return SUCCESS;                                     /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */

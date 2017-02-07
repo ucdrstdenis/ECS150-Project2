@@ -3,6 +3,9 @@
 
 #include "queue.h"                                      /* queue_t is a pointer to a queue      */
 
+/* **************************************************** */
+/*                   Queue #DEFINES                     */
+/* **************************************************** */
 #define FAIL        -1                                  /* Fail code                            */
 #define SUCCESS      0                                  /* Success code                         */
 
