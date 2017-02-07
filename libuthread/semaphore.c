@@ -31,7 +31,6 @@ sem_t sem_create(size_t count)
     sem_t sem = (semaphore*) malloc(sizeof(semaphore)); /* Allocate memory for the semaphore    */
     sem->waitQ = queue_create();                        /* Queue of waiting threads             */
     sem->count = count;                                 /* Semaphore Count                      */
-    printf("DEBUG: sem_create() passed count=%lu, sem->count=%lu\n", count, sem->count);
     return sem;                                         /* Return the semaphore                 */
 }
 /* **************************************************** */
@@ -50,12 +49,8 @@ int sem_destroy(sem_t sem)
 /* **************************************************** */
 int sem_down(sem_t sem)
 {
-    struct uthread_tcb *thread;
-    printf("DEBUG: sem_down() count=%lu, address=%p\n", sem->count, (void*) sem);
-    if(sem->count == 0) {                               /* Check if currently zero             */
-        printf("DEBUG: sem_down() Blocking thread\n");
-        if(queue_enqueue(sem->waitQ, (void *) thread))     /* Add thread to the semaphore's queue  */
-            printf("DEBUG: sem_down() Failed to enqueue!\n");
+    if(sem->count == 0) {                               /* Check if currently zero              */
+        queue_enqueue(sem->waitQ, uthread_current());   /* Add thread to the semaphore's queue  */
 	    uthread_block();                                /* Block the thread                     */
 	} else sem->count--;
     return SUCCESS;                                     /* Return SUCCESS                       */
@@ -66,16 +61,12 @@ int sem_down(sem_t sem)
 /* **************************************************** */
 int sem_up(sem_t sem)
 {
-    struct uthread_tcb *thread = NULL;
-    printf("DEBUG: sem_up() address=%p\n", (void*)sem);
+    struct uthread_tcb *thread;
     if(sem->count == 0) {                                /* If incremented count == 0            */
-	    if(!queue_dequeue(sem->waitQ, (void **) &thread)) {/* If items to dequeue exist           */
-	        if (thread == NULL) printf("DEBUG: sem_up() Thread is NULL\n");
-	        printf("DEBUG: sem_up() unblocking thread\n");
-	        uthread_unblock(thread);                    /* Unblock the first item in the queue */
-	    }
-	}
-    sem->count++;
+	    if(!queue_dequeue(sem->waitQ, (void **) &thread))/* If items to dequeue exist           */
+	        uthread_unblock(thread);                     /* Unblock the first item in the queue */
+	    else sem->count++;
+    } else sem->count++;
     return SUCCESS;
 }
 /* **************************************************** */

@@ -59,7 +59,6 @@ static int uthread_enqueue(utcb *tcb, ustate state)
         case RUNNING:                                   /* Add to running queue                     */
             return queue_enqueue(RunQ,   (void *) tcb);
         case BLOCKED:                                   /* Add to waiting queue                     */
-            printf("DEBUG: uthread_enqueue() Adding thread @address %p to blocked queue!\n",(void *) tcb);
             return queue_enqueue(WaitQ,  (void *) tcb);
         case DONE:                                      /* Add to done queue                        */
             return queue_enqueue(DoneQ,  (void *) tcb);
@@ -73,13 +72,26 @@ static int uthread_enqueue(utcb *tcb, ustate state)
 void uthread_yield(void)                                /* See Fig 4.14 in Anderson Textbook        */
 {
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
+    //utcb *waitTCB;
 
+    //nextTCB = NULL;
+    //unsigned int i, waitLen;
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
 
- /* TODO I think this should maybe check WaitQ first??? */
+ /* I think this should maybe check WaitQ first??? */
  /* If no items in WaitQ are ready, then check ReadyQ */
 
+    //if ((waitLen = queue_length(WaitQ)))
+    //    for (i = 0; i < waitLen; i++) {
+    //        queue_dequeue(WaitQ, (void **) &waitTCB);
+    //        if (waitTCB->state == READY && nextTCB == NULL)
+    //            nextTCB = waitTCB;
+    //    }
+
+    //if (nextTCB == NULL)
+    //    queue_dequeue(ReadyQ, (void **) &nextTCB);
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
+    //if (nextTCB != NULL) {
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
         //if (runTCB == NULL) return;                   /* TODO what happens if nothing running?    */
         uthread_enqueue(runTCB, READY);                 /* Change state, add to ready queue         */
@@ -145,7 +157,7 @@ void uthread_exit(void)
 void uthread_block(void)
 {
     utcb *nextTCB, *runTCB;                             /* Declare TCB pointers                     */
-    printf("DEBUG: uthread_block()\n");
+
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
     queue_dequeue(RunQ,   (void **) &runTCB);           /* Remove thread from the running queue     */
     queue_dequeue(ReadyQ, (void **) &nextTCB);          /* Get the next TCB from the Ready queue    */
@@ -160,10 +172,8 @@ void uthread_block(void)
 /* **************************************************** */
 void uthread_unblock(struct uthread_tcb *uthread)
 {
-    printf("DEBUG: uthread_unblock()\n");
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
-    if(queue_delete(WaitQ, (void *) uthread))              /* Remove the tcb from the waiting queue    */
-        printf("DEBUG: Can't find thread @ address %p to delete!\nFAIL IS HERE!!!\n\n", (void*)uthread);
+    queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
     uthread->state = READY;
     uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
     //enableInterrupts();                               /* TODO not sure how to do this yet         */
@@ -196,16 +206,21 @@ void uthread_start(uthread_func_t start, void *arg)
     uthread_enqueue(idleThread, RUNNING);               /* Set the state, add to running queue          */
     uthread_create(start, arg);                         /* Create 1 thread, auto-add to ready queue     */
 
-    while(queue_length(ReadyQ))
-        uthread_yield();      /* Ready threads exist? Switch to next thread   */
+    //while(queue_length(ReadyQ) || queue_length(WaitQ))  /* Ready threads exist? Switch to next thread   */
+    while(queue_length(ReadyQ))                         /* Ready threads exist? */
+        uthread_yield();
 
     /* Memory Cleanup */
     queue_delete(RunQ, (void *) idleThread);            /* Remove idleThread from the running queue     */
     free(idleThread->uctx);                             /* Free user-level thread context               */
     free(idleThread);                                   /* Free TCB from memory                         */
     for (i = 0; i < NQUEUES; i++) {                     /* For each queue in QArray[]                   */
-        if(queue_destroy(*QArray[i]))                   /* Destroy the queue                            */
-            printf("Failed to destroy queue %d\n", i);  /* Debug Statement, Check for memory leaks    */
+        if(queue_destroy(*QArray[i])) {                  /* Destroy the queue                            */
+            printf("DEBUG: Failed to destroy queue %d\n", i);  /* Debug Statement, Check for memory leaks      */
+            printf("DEBUG: Queue has %d items in it still!!", queue_length(*QArray[i]));
+            printf("DEBUG: THIS MAKES ME NERVOUS\n");
+            printf("DEBUG: THEY ALL SHOULD BE EMPTY!\n");
+        }
     }
 }
 /* **************************************************** */
