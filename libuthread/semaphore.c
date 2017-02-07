@@ -7,6 +7,7 @@
 #include "queue.h"
 #include "semaphore.h"                                  /* sem_t is a pointer to a semaphore */
 #include "uthread.h"
+#include <stdio.h>
 
 /* **************************************************** */
 /*                 Semaphore #DEFINES                   */
@@ -19,7 +20,7 @@
 /* **************************************************** */
 typedef struct semaphore {
     size_t count;                                       /* Semaphore count                      */
-    queue_t WaitQ;                                      /* Queue of threads waiting for sem     */
+    queue_t waitQ;                                      /* Queue of threads waiting for sem     */
 } semaphore;
 /* **************************************************** */
 /* **************************************************** */
@@ -27,10 +28,10 @@ typedef struct semaphore {
 /* **************************************************** */
 sem_t sem_create(size_t count)
 {
-    sem_t sem = (semaphore*) malloc(sizeof(semaphore));
+    sem_t sem = (semaphore*) malloc(sizeof(semaphore)); /* Allocate memory for the semaphore    */
+    sem->waitQ = queue_create();                        /* Queue of waiting threads             */
     sem->count = count;                                 /* Semaphore Count                      */
-    sem->WaitQ = queue_create();                        /* Queue of waiting threads             */
-    return sem;
+    return sem;                                         /* Return the semaphore                 */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -38,7 +39,7 @@ sem_t sem_create(size_t count)
 /* **************************************************** */
 int sem_destroy(sem_t sem)
 {
-    if(queue_destroy(sem->WaitQ)) return FAIL;          /* Queue destroy failed, return FAIL    */
+    if(queue_destroy(sem->waitQ)) return FAIL;          /* Queue destroy failed, return FAIL    */
 	free(sem);                                          /* Deallocate the memory                */
     return SUCCESS;                                     /* Return success                       */
 }
@@ -48,9 +49,14 @@ int sem_destroy(sem_t sem)
 /* **************************************************** */
 int sem_down(sem_t sem)
 {
-	/* TODO Phase 3 */
-
-    return SUCCESS;
+    struct uthread_tcb *thread;
+    printf("SEMDOWN\n");
+    if(sem->count-- < 0) {                              /* Decrement count, check if < 0        */
+	    printf("SEMCOUNT=%d", sem->count);
+        queue_enqueue(sem->waitQ, (void *) thread);     /* Add thread to the semaphore's queue  */
+	    uthread_block();                                /* Block the thread                     */
+	}
+    return SUCCESS;                                     /* Return SUCCESS                       */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -58,8 +64,13 @@ int sem_down(sem_t sem)
 /* **************************************************** */
 int sem_up(sem_t sem)
 {
-	/* TODO Phase 3 */
-
+    struct uthread_tcb *thread;
+    printf("SEMUP\n");
+	if(++sem->count > 0) {                              /* If incremented count > 0            */
+        printf("SEMCOUNT=%d", sem->count);
+	    if(!queue_dequeue(sem->waitQ, (void**) &thread))/* If items to dequeue exist           */
+	        uthread_unblock(thread);                    /* Unblock the first item in the queue */
+	}
     return SUCCESS;
 }
 /* **************************************************** */

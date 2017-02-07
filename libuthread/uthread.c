@@ -17,6 +17,7 @@
 /* **************************************************** */
 #define FAIL        -1                                  /* Fail code                                */
 #define SUCCESS      0                                  /* Success code                             */
+#define NQUEUES      4                                  /* Total number of global queues            */
 
 /* **************************************************** */
 /*                   UThread GLOBALS                    */
@@ -49,7 +50,8 @@ typedef uthread_state_t ustate;                         /* Typedef for convenien
 /* **************************************************** */
 /*                Static uThread Enqueue                */
 /* **************************************************** */
-static int uthread_enqueue(utcb *tcb, ustate state){
+static int uthread_enqueue(utcb *tcb, ustate state)
+{                                                       /* Function for convenience                 */
     tcb->state = state;                                 /* Set the state                            */
     switch(state) {                                     /* Choose queue to add the thread to        */
         case READY:                                     /* Add to ready queue                       */
@@ -71,10 +73,10 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
 {
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
 
-    //disableInterrupts();                              /* TODO not sure how to do this yet         */
+    //disableInterrupts();                                /* TODO not sure how to do this yet         */
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
-        if (runTCB == NULL) return;                     /* TODO what happens if nothing running?    */
+        //if (runTCB == NULL) return;                   /* TODO what happens if nothing running?    */
         uthread_enqueue(runTCB, READY);                 /* Change state, add to ready queue         */
         uthread_enqueue(nextTCB, RUNNING);              /* Change state, add to running queue       */
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
@@ -85,7 +87,7 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
     }
-    // enableInterrupts();                              /* TODO not sure how to do this yet         */
+    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -105,7 +107,7 @@ static utcb *uthread_init(uthread_func_t func, void *arg)
 /*                   uThread Create                     */
 /* **************************************************** */
 int uthread_create(uthread_func_t func, void *arg)
-{
+{                                                       /* See Anderson Textbook Figure 4.13        */
     struct uthread_tcb *tcb = uthread_init(func, arg);  /* Alloc/Init thread control block          */
     tcb->stack = uthread_ctx_alloc_stack();             /* Alloc stack, Set pointer to stack top    */
     uthread_enqueue(tcb, READY);                        /* Add the thread to the ready queue        */
@@ -121,14 +123,15 @@ int uthread_create(uthread_func_t func, void *arg)
 /*                    uThread Exit                      */
 /* **************************************************** */
 void uthread_exit(void)
-{
+{                                                       /* See Anderson Textbook 4.6.2              */
     utcb *me, *next;                                    /* Declare TCB pointers                     */
+    //disableInterrupts();                                /* TODO not sure how to do this yet         */
     queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
     uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
-
     queue_dequeue(ReadyQ, (void **) &next);             /* Get the next TCB from the ready queue    */
     uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
+    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -136,14 +139,15 @@ void uthread_exit(void)
 /* **************************************************** */
 void uthread_block(void)
 {
-    utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
+    utcb *nextTCB, *runTCB;                             /* Declare TCB pointers                     */
 
-    //disableInterrupts();                              /* TODO not sure how to do this yet         */
-        queue_dequeue(ReadyQ, (void **) &nextTCB);      /* Get the next TCB from the Ready queue    */
-        queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
-        uthread_enqueue(runTCB, READY);                 /* Change state, add to ready queue         */
-        uthread_enqueue(nextTCB, BLOCKED);              /* Change state, add to running queue       */
-        uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
+    //disableInterrupts();                                /* TODO not sure how to do this yet         */
+    queue_dequeue(RunQ,   (void **) &runTCB);           /* Remove thread from the running queue     */
+    queue_dequeue(ReadyQ, (void **) &nextTCB);          /* Get the next TCB from the Ready queue    */
+    uthread_enqueue(nextTCB, BLOCKED);                  /* Change state, add to running queue       */
+    uthread_enqueue(runTCB, READY);                     /* Change state, add to ready queue         */
+    uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);    /* Switch context of runTCB and nextTCB     */
+    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -151,9 +155,10 @@ void uthread_block(void)
 /* **************************************************** */
 void uthread_unblock(struct uthread_tcb *uthread)
 {
-
-    /* TODO Phase 2 */
-
+    //disableInterrupts();                                /* TODO not sure how to do this yet         */
+    queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
+    uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
+    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -161,7 +166,7 @@ void uthread_unblock(struct uthread_tcb *uthread)
 /* **************************************************** */
 struct uthread_tcb *uthread_current(void)
 {
-    struct uthread_tcb *current;                        /* TODO don't use queue dequeue/enqueue here    */
+    struct uthread_tcb *current;                        /* TODO try not use queue dequeue/enqueue here  */
     queue_dequeue(RunQ, (void **) &current);            /* Get the currently running TCB from the queue */
     queue_enqueue(RunQ, (void *) current);              /* Add back to the running queue                */
     return current;                                     /* Return pointer to currently running thread   */
@@ -175,10 +180,10 @@ void uthread_start(uthread_func_t start, void *arg)
     unsigned int i;
     queue_t *QArray[]={&ReadyQ, &RunQ, &WaitQ, &DoneQ}; /* Declare array of queue pointers              */
 
-    for (i = 0; i < 4; i++)                             /* For each queue in QArray[]                   */
+    for (i = 0; i < NQUEUES; i++)                       /* For each queue in QArray[]                   */
         *QArray[i] = queue_create();                    /* Alloc/Init global pointer to each queue      */
 
-    /* Create idle & 1st threads. Then loop */
+    /* Create idle & 1st thread. Then loop */
     utcb *idleThread = uthread_init(NULL, NULL);        /* Alloc/Init a TCB to the idle thread          */
     uthread_enqueue(idleThread, RUNNING);               /* Set the state, add to running queue          */
     uthread_create(start, arg);                         /* Create 1 thread, auto-add to ready queue     */
@@ -189,7 +194,9 @@ void uthread_start(uthread_func_t start, void *arg)
     queue_delete(RunQ, (void *) idleThread);            /* Remove idleThread from the running queue     */
     free(idleThread->uctx);                             /* Free user-level thread context               */
     free(idleThread);                                   /* Free TCB from memory                         */
-    for (i = 0; i < 4; i++)                             /* For each queue in QArray[]                   */
-        queue_destroy(*QArray[i]);                      /* Destroy the queue                            */
+    for (i = 0; i < NQUEUES; i++) {                     /* For each queue in QArray[]                   */
+        if(queue_destroy(*QArray[i]))                   /* Destroy the queue                            */
+            printf("Failed to destroy queue %d\n", i);  /* Debug Statement, Check for memory leaks    */
+    }
 }
 /* **************************************************** */
