@@ -59,6 +59,7 @@ static int uthread_enqueue(utcb *tcb, ustate state)
         case RUNNING:                                   /* Add to running queue                     */
             return queue_enqueue(RunQ,   (void *) tcb);
         case BLOCKED:                                   /* Add to waiting queue                     */
+            printf("DEBUG: uthread_enqueue() Adding thread @address %p to blocked queue!\n",(void *) tcb);
             return queue_enqueue(WaitQ,  (void *) tcb);
         case DONE:                                      /* Add to done queue                        */
             return queue_enqueue(DoneQ,  (void *) tcb);
@@ -161,7 +162,8 @@ void uthread_unblock(struct uthread_tcb *uthread)
 {
     printf("DEBUG: uthread_unblock()\n");
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
-    queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
+    if(queue_delete(WaitQ, (void *) uthread))              /* Remove the tcb from the waiting queue    */
+        printf("DEBUG: Can't find thread @ address %p to delete!\nFAIL IS HERE!!!\n\n", (void*)uthread);
     uthread->state = READY;
     uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
     //enableInterrupts();                               /* TODO not sure how to do this yet         */
@@ -194,7 +196,8 @@ void uthread_start(uthread_func_t start, void *arg)
     uthread_enqueue(idleThread, RUNNING);               /* Set the state, add to running queue          */
     uthread_create(start, arg);                         /* Create 1 thread, auto-add to ready queue     */
 
-    while(queue_length(ReadyQ))   uthread_yield();      /* Ready threads exist? Switch to next thread   */
+    while(queue_length(ReadyQ))
+        uthread_yield();      /* Ready threads exist? Switch to next thread   */
 
     /* Memory Cleanup */
     queue_delete(RunQ, (void *) idleThread);            /* Remove idleThread from the running queue     */
