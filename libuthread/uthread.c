@@ -29,10 +29,10 @@ queue_t DoneQ;                                          /* Global pointer to Don
 /*                  UThread Structures                  */
 /* **************************************************** */
 typedef enum  {
-    READY    = 0x00,                                    /* Ready list, Regs in TCB                  */
-    RUNNING  = 0x01,                                    /* Running list, Regs in Proc               */
-    BLOCKED  = 0x02,                                    /* Sync Vars WL, Regs in TCB                */
-    FINISHED = 0x03                                     /* Finished list, Regs deleted              */
+    READY   = 0x00,                                     /* Ready list, Regs in TCB                  */
+    RUNNING = 0x01,                                     /* Running list, Regs in Proc               */
+    BLOCKED = 0x02,                                     /* Sync Vars WL, Regs in TCB                */
+    DONE    = 0x03                                      /* Finished list, Regs deleted              */
 } uthread_state_t;
 
 struct uthread_tcb {
@@ -42,10 +42,29 @@ struct uthread_tcb {
     uthread_ctx_t *uctx;                                /* User level thread context                */
     int exitCode;                                       /* Thread exit code                         */
     void *arg;                                          /* Pointer to thread function arg           */
-    void *stack;                                        /* Pointer to top_of_stack                  */
+    void *stack;                                        /* Pointer to the top of the stack          */
 };
 
 typedef struct uthread_tcb utcb;                        /* Typedef for convenience                  */
+typedef uthread_state_t ustate;                         /* Typedef for convenience                  */
+/* **************************************************** */
+/* **************************************************** */
+/*              Static UThread Enqueue                  */
+/* **************************************************** */
+static int uthread_enqueue(utcb *tcb, ustate state){
+    tcb->state = state;                                 /* Set the state                            */
+    switch(state) {                                     /* Choose queue to add the thread to        */
+        case READY:                                     /* Add to ready queue                       */
+            return queue_enqueue(ReadyQ, (void *) tcb);
+        case RUNNING:                                   /* Add to running queue                     */
+            return queue_enqueue(RunQ,   (void *) tcb);
+        case BLOCKED:                                   /* Add to waiting queue                     */
+            return queue_enqueue(WaitQ,  (void *) tcb);
+        case DONE:                                      /* Add to done queue                        */
+            return queue_enqueue(DoneQ,  (void *) tcb);
+    }
+    return FAIL;                                        /* Passed invalid state, return FAIL        */
+}
 /* **************************************************** */
 /* **************************************************** */
 /*                    UThread Yield                     */
@@ -55,26 +74,19 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
 
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
-        queue_dequeue(ReadyQ, (void **)  &nextTCB);     /* Get the next TCB from the Ready queue    */
-        runTCB = uthread_current();                     /* Get currently running thread             */
-        if (runTCB == NULL) return;                     /* TODO what happens if nothing running     */
-        runTCB->state = READY;                          /* Change the state of running TCB          */
-        queue_dequeue(RunQ, (void **) &runTCB);         /* Remove thread from the running queue     */
-        queue_enqueue(ReadyQ, (void *) runTCB);         /* Add running thread to the ready queue    */
-
-        nextTCB->state = RUNNING;                       /* Change the state of the next TCB         */
-        queue_enqueue(RunQ, (void *) nextTCB);          /* Add the next thread to the running queue */
-
-        //printf("Switching Contexts\n");
+    if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
+        queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
+        if (runTCB == NULL) return;                     /* TODO what happens if nothing running?    */
+        uthread_enqueue(runTCB, READY);                 /* Change state, add to ready queue         */
+        uthread_enqueue(nextTCB, RUNNING);              /* Change state, add to running queue       */
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
+    }
 
-    while(!queue_dequeue(DoneQ,(void **)&doneTCB)) {    /* While threads to deQ exist on DoneQ      */
-        //printf("Destroying Thread");
+    while(!queue_dequeue(DoneQ,(void **) &doneTCB)) {   /* While threads to deQ exist in DoneQ      */
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
     }
-
     // enableInterrupts();                              /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
@@ -97,9 +109,9 @@ static utcb *uthread_init(uthread_func_t func, void *arg)
 /* **************************************************** */
 int uthread_create(uthread_func_t func, void *arg)
 {
-    struct uthread_tcb *tcb = uthread_init(func, arg);  /* Alloc/Init thread control block struct   */
-    tcb->stack   = uthread_ctx_alloc_stack();           /* Alloc stack, Set pointer to stack top    */
-    queue_enqueue(ReadyQ, (void *) tcb);                /* Add the thread to the ready queue        */
+    struct uthread_tcb *tcb = uthread_init(func, arg);  /* Alloc/Init thread control block          */
+    tcb->stack = uthread_ctx_alloc_stack();             /* Alloc stack, Set pointer to stack top    */
+    uthread_enqueue(tcb, READY);                        /* Add the thread to the ready queue        */
 
     /* Initialize user-level thread context */
     if (uthread_ctx_init(tcb->uctx, tcb->stack, func, arg))
@@ -114,19 +126,12 @@ int uthread_create(uthread_func_t func, void *arg)
 void uthread_exit(void)
 {
     utcb *me, *next;                                    /* Declare TCB pointers                     */
-
     me = uthread_current();                             /* Get currently running thread             */
     queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
-    me->state = FINISHED;                               /* Set the state                            */
-    queue_enqueue(DoneQ, (void *) me);                  /* Add the thread to the finished queue     */
-    // uthread_yield will destroy all items in DoneQ
-    // next time main thread calls it.
-
+    uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     queue_dequeue(ReadyQ, (void **) &next);             /* Get the next TCB from the ready queue    */
-    next->state = RUNNING;                              /* Update the next TCB's state              */
-    queue_enqueue(RunQ, (void *) next);                 /* Add the next TCB to the running queue    */
+    uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
-
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -135,7 +140,7 @@ void uthread_exit(void)
 void uthread_block(void)
 {
 
-	/* TODO Phase 2 */
+    /* TODO Phase 2 */
 
 }
 /* **************************************************** */
@@ -145,7 +150,7 @@ void uthread_block(void)
 void uthread_unblock(struct uthread_tcb *uthread)
 {
 
-	/* TODO Phase 2 */
+    /* TODO Phase 2 */
 
 }
 /* **************************************************** */
@@ -154,12 +159,10 @@ void uthread_unblock(struct uthread_tcb *uthread)
 /* **************************************************** */
 struct uthread_tcb *uthread_current(void)
 {
-    
-    //TODO don't use queue_dequeue / queue_enqueue here */
+    //TODO don't use queue_dequeue / queue_enqueue here
     struct uthread_tcb *current;
     queue_dequeue(RunQ, (void **) &current);            /* Get the next TCB from the ready queue           */
     queue_enqueue(RunQ, (void *) current);
-
     return current;                                     /* Return pointer to currently running TCB         */
 }
 /* **************************************************** */
@@ -173,22 +176,20 @@ void uthread_start(uthread_func_t start, void *arg)
     queue_t *QArray[]={&ReadyQ, &RunQ, &WaitQ, &DoneQ}; /* Declare array of queue pointers                  */
 
     /* Create the global queues */
-    for (i = 0; i < 4; i++)                             /* For each item in QArray[]                        */
-        *QArray[i] = queue_create();                    /* Alloc/Init global pointer for each queue         */
+    for (i = 0; i < 4; i++)                             /* For each queue in QArray[]                       */
+        *QArray[i] = queue_create();                    /* Alloc/Init global pointer to each queue          */
 
     /* Create idle and 1st threads */
     idleThread = uthread_init(NULL, NULL);              /* Alloc/Init a TCB to the idle thread              */
-    queue_enqueue(RunQ, (void *) idleThread);           /* Add the main thread to the Running queue         */
+    uthread_enqueue(idleThread, RUNNING);               /* Set the state, add to running queue              */
     uthread_create(start, arg);                         /* Create 1 thread, auto-add to ready queue         */
 
     /* Main loop */
-     while(queue_length(ReadyQ)) {                      /* While there are ready threads                    */
-         uthread_yield();                               /* Switch to the next thread                        */
-     }
+     while(queue_length(ReadyQ))    uthread_yield();    /* While ready threads exist, switch to next thread */
 
     /* Destroy the queues */
-    queue_delete(ReadyQ, (void *) idleThread);
-    for (i = 0; i < 4; i++)
-        queue_destroy(*QArray[i]);                      /* Destroy each queue in QArray[]                    */
+    queue_delete(RunQ, (void *) idleThread);            /* Remove the idleThread from the Running queue     */
+    for (i = 0; i < 4; i++)                             /* For each queue in QArray[]                       */
+        queue_destroy(*QArray[i]);                      /* Destroy the queue                                */
 }
 /* **************************************************** */
