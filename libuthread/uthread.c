@@ -73,7 +73,11 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
 {
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
 
-    //disableInterrupts();                                /* TODO not sure how to do this yet         */
+    //disableInterrupts();                              /* TODO not sure how to do this yet         */
+
+ /* TODO I think this should maybe check WaitQ first??? */
+ /* If no items in WaitQ are ready, then check ReadyQ */
+
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
         //if (runTCB == NULL) return;                   /* TODO what happens if nothing running?    */
@@ -87,7 +91,7 @@ void uthread_yield(void)                                /* See Fig 4.14 in Ander
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
     }
-    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
+    //enableInterrupts();                               /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -125,13 +129,13 @@ int uthread_create(uthread_func_t func, void *arg)
 void uthread_exit(void)
 {                                                       /* See Anderson Textbook 4.6.2              */
     utcb *me, *next;                                    /* Declare TCB pointers                     */
-    //disableInterrupts();                                /* TODO not sure how to do this yet         */
+    //disableInterrupts();                              /* TODO not sure how to do this yet         */
     queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
     uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     queue_dequeue(ReadyQ, (void **) &next);             /* Get the next TCB from the ready queue    */
     uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
-    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
+    //enableInterrupts();                               /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -140,14 +144,14 @@ void uthread_exit(void)
 void uthread_block(void)
 {
     utcb *nextTCB, *runTCB;                             /* Declare TCB pointers                     */
-
-    //disableInterrupts();                                /* TODO not sure how to do this yet         */
+    printf("DEBUG: uthread_block()\n");
+    //disableInterrupts();                              /* TODO not sure how to do this yet         */
     queue_dequeue(RunQ,   (void **) &runTCB);           /* Remove thread from the running queue     */
     queue_dequeue(ReadyQ, (void **) &nextTCB);          /* Get the next TCB from the Ready queue    */
-    uthread_enqueue(nextTCB, BLOCKED);                  /* Change state, add to running queue       */
-    uthread_enqueue(runTCB, READY);                     /* Change state, add to ready queue         */
+    uthread_enqueue(runTCB, BLOCKED);                   /* Change state, add to wait queue          */
+    uthread_enqueue(nextTCB, RUNNING);                  /* Change state, add to running queue       */
     uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);    /* Switch context of runTCB and nextTCB     */
-    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
+    //enableInterrupts();                               /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -155,10 +159,12 @@ void uthread_block(void)
 /* **************************************************** */
 void uthread_unblock(struct uthread_tcb *uthread)
 {
-    //disableInterrupts();                                /* TODO not sure how to do this yet         */
+    printf("DEBUG: uthread_unblock()\n");
+    //disableInterrupts();                              /* TODO not sure how to do this yet         */
     queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
+    uthread->state = READY;
     uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
-    //enableInterrupts();                                 /* TODO not sure how to do this yet         */
+    //enableInterrupts();                               /* TODO not sure how to do this yet         */
 }
 /* **************************************************** */
 /* **************************************************** */
