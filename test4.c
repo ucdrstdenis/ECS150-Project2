@@ -6,6 +6,11 @@
  * be different. The synchronization is managed through two semaphores.
  */
 
+/*
+ * Added patch from piazza post 257
+ * RSD
+ */
+
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,10 +35,10 @@ void consumer(void* arg)
 	struct test4 *t = (struct test4*)arg;
 	size_t out = 0;
 
-	while (out < t->maxcount) {
+	while (out < t->maxcount - 1) {
 		size_t i, n = random() % BUFFER_SIZE + 1;
 
-		n = clamp(n, t->maxcount - out);
+		n = clamp(n, t->maxcount - out - 1);
 		printf("Consumer wants to get %zu items out of buffer...\n", n);
 		for (i = 0; i < n; i++) {
 			sem_down(t->empty);

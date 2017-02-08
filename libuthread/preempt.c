@@ -23,6 +23,7 @@ void preempt_save(sigset_t *level)
 {
 
 	/* TODO Phase 4 */
+    preempt_disable();                                  /* Disable preemption */
 
 }
 /* **************************************************** */
@@ -33,6 +34,7 @@ void preempt_restore(sigset_t *level)
 {
 
 	/* TODO Phase 4 */
+    preempt_enable();                                   /* Enable preemption */
 
 }
 /* **************************************************** */
@@ -47,7 +49,7 @@ void preempt_enable(void)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                   Preempt Disable                    */
+/*                    Preempt Disable                   */
 /* **************************************************** */
 void preempt_disable(void)
 {
@@ -94,6 +96,7 @@ void preempt_start(void)
 	/*
 	 * Install signal handler @timer_handler for dealing with alarm signals
 	 */
+
 	sa.sa_handler = timer_handler;
 	sigemptyset(&sa.sa_mask);
 	/* Make functions such as read() or write() to restart instead of
