@@ -22,6 +22,7 @@ typedef struct semaphore {
     size_t count;                                       /* Semaphore count long unsigned int    */
     queue_t waitQ;                                      /* Queue of threads waiting for sem     */
 } semaphore;
+
 /* **************************************************** */
 /* **************************************************** */
 /*                   Semaphore Create                   */

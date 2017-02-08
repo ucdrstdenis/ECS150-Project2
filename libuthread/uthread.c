@@ -76,7 +76,7 @@ void uthread_yield(void)
 {                                                       /* See Fig 4.14 in Anderson Textbook        */
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
 
-    preempt_disable();                                  /* Disable interrupts                       */
+    preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
         //if (runTCB == NULL) return;                   /* This shouldn't ever happen               */
@@ -90,7 +90,7 @@ void uthread_yield(void)
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
         free(doneTCB);                                  /* Free TCBs from memory                    */
     }
-    preempt_enable();                                   /* Enable interrupts                        */
+    preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
 }                                                       /* ^^ 1st thing thread does when it returns */
 /* **************************************************** */
 /* **************************************************** */
@@ -130,13 +130,13 @@ void uthread_exit(void)
 {                                                       /* See Anderson Textbook 4.6.2              */
     utcb *me, *next;                                    /* Declare TCB pointers                     */
 
-    preempt_disable();                                  /* Disable interrupts                       */
+    preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
     uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     queue_dequeue(ReadyQ, (void **) &next);             /* Get the next TCB from the ready queue    */
     uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
-    preempt_enable();                                   /* Enable interrupts                        */
+    preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -146,13 +146,13 @@ void uthread_block(void)
 {
     utcb *nextTCB, *runTCB;                             /* Declare TCB pointers                     */
 
-    preempt_disable();                                  /* Disable interrupts                       */
+    preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     queue_dequeue(RunQ,   (void **) &runTCB);           /* Remove thread from the running queue     */
     queue_dequeue(ReadyQ, (void **) &nextTCB);          /* Get the next TCB from the Ready queue    */
     uthread_enqueue(runTCB, BLOCKED);                   /* Change state, add to wait queue          */
     uthread_enqueue(nextTCB, RUNNING);                  /* Change state, add to running queue       */
     uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);    /* Switch context of runTCB and nextTCB     */
-    preempt_enable();                                   /* Enable interrupts                        */
+    preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -160,7 +160,7 @@ void uthread_block(void)
 /* **************************************************** */
 void uthread_unblock(struct uthread_tcb *uthread)
 {
-    preempt_disable();                                  /* Disable interrupts                       */
+    preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
     uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
     preempt_enable();                                   /* Enable interrupts                        */
@@ -201,10 +201,7 @@ void uthread_start(uthread_func_t start, void *arg)
     queue_delete(RunQ, (void *) initThread);            /* Remove initThread from the running queue     */
     free(initThread->uctx);                             /* Free user-level thread context               */
     free(initThread);                                   /* Free TCB from memory                         */
-    for (i = 0; i < NQUEUES; i++) {                     /* For each queue in QArray[]                   */
-        if(queue_destroy(*QArray[i])) {                 /* Destroy the queue                            */
-            printf("DEBUG: Queue %d still has %d items in it!!", i, queue_length(*QArray[i]));
-        }
-    }
+    for (i = 0; i < NQUEUES; i++)                       /* For each queue in QArray[]                   */
+       queue_destroy(*QArray[i]);                       /* Destroy the queue                            */
 }
 /* **************************************************** */
