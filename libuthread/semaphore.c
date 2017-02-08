@@ -52,7 +52,7 @@ int sem_down(sem_t sem)
     if(sem->count == 0) {                               /* Check if currently zero              */
         queue_enqueue(sem->waitQ, uthread_current());   /* Add thread to the semaphore's queue  */
 	    uthread_block();                                /* Block the thread                     */
-	} else sem->count--;
+	} else sem->count--;                                /* Otherwise decrement the semaphore    */
     return SUCCESS;                                     /* Return SUCCESS                       */
 }
 /* **************************************************** */

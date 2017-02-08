@@ -76,7 +76,8 @@ bool preempt_disabled(void)
 static void timer_handler(int signo)
 {
 
-	/* TODO Phase 4 */
+    printf("DEBUG: timer handler, signal=%d\n", signo);
+    //uthread_yield();
 
 }
 /* **************************************************** */
@@ -87,6 +88,8 @@ void preempt_start(void)
 {
 	struct sigaction sa;
 	struct itimerval it;
+
+	   printf("DEBUG: preempt_start()\n");
 
 	/*
 	 * Install signal handler @timer_handler for dealing with alarm signals

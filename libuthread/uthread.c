@@ -174,7 +174,7 @@ void uthread_unblock(struct uthread_tcb *uthread)
 {
     //disableInterrupts();                              /* TODO not sure how to do this yet         */
     queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
-    uthread->state = READY;
+    //uthread->state = READY;
     uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
     //enableInterrupts();                               /* TODO not sure how to do this yet         */
 }
@@ -201,6 +201,8 @@ void uthread_start(uthread_func_t start, void *arg)
     for (i = 0; i < NQUEUES; i++)                       /* For each queue in QArray[]                   */
         *QArray[i] = queue_create();                    /* Alloc/Init global pointer to each queue      */
 
+    preempt_start();                                    /* Setup the timer handler                      */
+
     /* Create idle & 1st thread. Then loop */
     utcb *idleThread = uthread_init(NULL, NULL);        /* Alloc/Init a TCB to the idle thread          */
     uthread_enqueue(idleThread, RUNNING);               /* Set the state, add to running queue          */
@@ -216,10 +218,10 @@ void uthread_start(uthread_func_t start, void *arg)
     free(idleThread);                                   /* Free TCB from memory                         */
     for (i = 0; i < NQUEUES; i++) {                     /* For each queue in QArray[]                   */
         if(queue_destroy(*QArray[i])) {                  /* Destroy the queue                            */
-            printf("DEBUG: Failed to destroy queue %d\n", i);  /* Debug Statement, Check for memory leaks      */
-            printf("DEBUG: Queue has %d items in it still!!", queue_length(*QArray[i]));
-            printf("DEBUG: THIS MAKES ME NERVOUS\n");
-            printf("DEBUG: THEY ALL SHOULD BE EMPTY!\n");
+            //printf("DEBUG: Failed to destroy queue %d\n", i);  /* Debug Statement, Check for memory leaks      */
+            //printf("DEBUG: Queue has %d items in it still!!", queue_length(*QArray[i]));
+            //printf("DEBUG: THIS MAKES ME NERVOUS\n");
+            //printf("DEBUG: THEY ALL SHOULD BE EMPTY!\n");
         }
     }
 }
