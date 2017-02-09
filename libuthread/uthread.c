@@ -76,9 +76,8 @@ static int uthread_enqueue(utcb *tcb, ustate state)
 /*                    uThread Yield                     */
 /* **************************************************** */
 void uthread_yield(void)
-{                                                       /* See Fig 4.14 in Anderson Textbook        */
+{                                                       /* See Figure 4.14 in Anderson Textbook     */
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
-    preempt_disabled();
     preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
@@ -87,7 +86,7 @@ void uthread_yield(void)
         uthread_enqueue(nextTCB, RUNNING);              /* Change state, add to running queue       */
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
     }
-
+                                                        /* vvv1st thing thread does when it returns */
     while(!queue_dequeue(DoneQ, (void **) &doneTCB)) {  /* While threads exist in DoneQ             */
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
@@ -95,7 +94,7 @@ void uthread_yield(void)
         free(doneTCB);                                  /* Free TCBs from memory                    */
     }
     preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
-}                                                       /* ^^ 1st thing thread does when it returns */
+}
 /* **************************************************** */
 /* **************************************************** */
 /*                 Static uThread Init                  */
@@ -140,7 +139,7 @@ void uthread_exit(void)
     uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
-    preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
+   // preempt_restore(uthread_current()->sigset);       /* Restore signal state, enable interrupts  */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -198,7 +197,9 @@ void uthread_start(uthread_func_t start, void *arg)
     preempt_start();                                    /* Start the timer for the running thread       */
     uthread_create(start, arg);                         /* Create 1 thread, add to ready queue          */
 
+
     while(queue_length(ReadyQ))     uthread_yield();    /* Ready threads exist? Switch to next thread   */
+
 
     /* Memory cleanup */
     queue_delete(RunQ, (void *) initThread);            /* Remove initThread from the running queue     */
@@ -206,6 +207,6 @@ void uthread_start(uthread_func_t start, void *arg)
     free(initThread->sigset);                           /* Free sigset struct                           */
     free(initThread);                                   /* Free TCB from memory                         */
     for (i = 0; i < NQUEUES; i++)                       /* For each queue in QArray[]                   */
-       queue_destroy(*QArray[i]);                       /* Destroy the queue                            */
+       queue_destroy(*QArray[i]);                       /* Destroy the queues. Test 1-5 show no M leaks */
 }
 /* **************************************************** */

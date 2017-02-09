@@ -1,9 +1,12 @@
 #!/bin/bash
 # Remote compile script. 
 # Copy project to CSIF and compile it
-# Only works on Linux ATM, MAC version soon
+# Only works on Linux for now ...
 
-#### Edit below
+# Works best if local rsa key is added to
+# ~/.ssh/authorized_keys on CSIF acount for
+# passwordless rsync / ssh
+########################################################
 
 # CSIF Username
 USERNAME='rstdenis'
@@ -28,5 +31,4 @@ rsync -azvuhP --del $rsync_
 
 # SSH and compile
 ssh $ssh_
-
 

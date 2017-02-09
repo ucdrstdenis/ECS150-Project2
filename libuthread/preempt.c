@@ -13,49 +13,50 @@
 /* **************************************************** */
 /*                   Preempt #DEFINES                   */
 /* **************************************************** */
-#define HZ              100                             /* Frequency of preemption 100Hz              */
-#define IT_VIRT         ITIMER_VIRTUAL                  /* Only counts while process is running       */
-#define MAGIC_NUMBER    0x2000000                       /* sigset_t->__val[0] if SIGVTALRM is masked  */
+#define HZ              100                             /* Frequency of preemption 100Hz             */
+#define uSEC            1000000 / HZ                    /* Create fewer instructions for the program */
+#define IT_VIRT         ITIMER_VIRTUAL                  /* Only counts while process is running      */
+#define MAGIC_NUMBER    0x2000000                       /* sigset_t->__val[0] if SIGVTALRM is masked */
 
 /* **************************************************** */
 /*                   Preempt Globals                    */
 /* **************************************************** */
-static sigset_t alarmMask;                              /* For fast masking of interrupts             */
-static struct itimerval disableTimer = {                /* For fast disabling of the timer            */
-        .it_value.tv_usec     = 0,                      /* it_values are long ints, 8 Bytes           */
-        .it_value.tv_sec      = 0,
-        .it_interval.tv_usec  = 1000000 / HZ,
-        .it_interval.tv_sec   = 0
+static sigset_t alarmMask;                              /* For faster masking of interrupts          */
+static struct itimerval disableTimer = {                /* For faster disabling of the timer         */
+    .it_value.tv_usec     = 0,                          /* it_values are long ints, 8 Bytes          */
+    .it_value.tv_sec      = 0,
+    .it_interval.tv_usec  = uSEC,
+    .it_interval.tv_sec   = 0
 };
-static struct itimerval restoreTimer;                   /* Initialized in preempt_start               */
+static struct itimerval restoreTimer;                   /* Initialized in preempt_start              */
 /* **************************************************** */
 /*                      Preempt Save                    */
 /* **************************************************** */
 void preempt_save(sigset_t *level)
 {
     struct itimerval it;
-    long int save;
+    long int timeLeft;
 
-    sigprocmask(SIG_BLOCK, &alarmMask, level);          /* Mask the interrupt                         */
-    getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock        */
+    sigprocmask(SIG_BLOCK, &alarmMask, level);          /* Mask the interrupt                        */
+    getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock       */
 
     /*
      * Below only works because SIGVTALRM is the
      * only signal that we care about.
      * If other signals were of concern, or
-     * .tv_usec were much larger than 10000
+     * .tv_usec was much larger than 10000
      * this could go very very wrong.
      */
 
-    save = (MAGIC_NUMBER | it.it_value.tv_usec);        /* Bitwise OR with the MAGIC NUMBER          */
-    level->__val[0] = save;                             /* Save time left inside current->sigset_t   */
+    timeLeft = (MAGIC_NUMBER | it.it_value.tv_usec);    /* Bitwise OR with the magic number         */
+    level->__val[0] =timeLeft;                          /* Save time left inside current sigset_t   */
 
     /*
      * Could also skip the OR and just store it
      * inside  __val[1-15]. Not as much fun...
      */
 
-    preempt_disable();                                  /* Disable the timer                         */
+    preempt_disable();                                  /* Disable the timer                        */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -63,22 +64,22 @@ void preempt_save(sigset_t *level)
 /* **************************************************** */
 void preempt_restore(sigset_t *level)
 {
-  long unsigned int timeLeft;                           /* Remaining tv_usec after extraction        */
+    long unsigned int timeLeft;                        /* Remaining tv_usec after extraction        */
 
-  timeLeft = (~MAGIC_NUMBER & level->__val[0]);         /* Bitwise AND with inverted MAGIC NUMBER    */
-  restoreTimer.it_value.tv_usec = (long int) timeLeft;  /* Save in global to pass to preempt enable  */
-  level->__val[0] = MAGIC_NUMBER;                       /* Get rid of the saved remaining time       */
+    timeLeft = (~MAGIC_NUMBER & level->__val[0]);      /* Bitwise AND with an inverted magic number */
+    restoreTimer.it_value.tv_usec = (long int)timeLeft;/* Save in global to pass to preempt enable  */
+    level->__val[0] = MAGIC_NUMBER;                    /* Stop storing the remaining time           */
 
-  preempt_enable();                                     /* Enable preemption, pick up with timeLeft  */
-  sigprocmask(SIG_UNBLOCK, &alarmMask, level);          /* Un-mask the interrupt                     */
+    preempt_enable();                                  /* Enable preemption, pick up with timeLeft  */
+    sigprocmask(SIG_UNBLOCK, &alarmMask, level);       /* Un-mask the interrupt                     */
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                    Preempt Enable                    */
+/*                     Preempt Enable                   */
 /* **************************************************** */
 void preempt_enable(void)
 {
-    if (setitimer(IT_VIRT, &restoreTimer, NULL)) {
+    if (setitimer(IT_VIRT, &restoreTimer, NULL)) {      /* Enable the timer, restores if saved      */
          perror("setitimer");
          exit(1);
     }
@@ -96,7 +97,7 @@ void preempt_disable(void)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                  Preempt Disabled                    */
+/*                   Preempt Disabled                   */
 /* **************************************************** */
 bool preempt_disabled(void)
 {
@@ -106,7 +107,7 @@ bool preempt_disabled(void)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                  Timer Handler                       */
+/*                    Timer Handler                     */
 /* **************************************************** */
 /*
  * timer_handler - Timer signal handler (aka interrupt handler)
@@ -114,11 +115,11 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
-    uthread_yield();
+    uthread_yield();                                    /* yield() saves and restores the timer     */
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                     Preempt Start                    */
+/*                    Preempt Start                     */
 /* **************************************************** */
 void preempt_start(void)
 {
@@ -146,15 +147,14 @@ void preempt_start(void)
 	 * at 100 Hz
 	 */
 	it.it_value.tv_sec     = 0;
-	it.it_value.tv_usec    = 1000000 / HZ;              /* 10,000 us - 10 ms */
+	it.it_value.tv_usec    = uSEC;                      /* 10,000 us - 10 ms                        */
 	it.it_interval.tv_sec  = 0;
-	it.it_interval.tv_usec = 1000000 / HZ;;             /* 10,000 us - 10 ms */
+	it.it_interval.tv_usec = uSEC;                      /* 10,000 us - 10 ms                        */
 
-	/*
-	 * RSD
-	 */
-	restoreTimer = it;                                  /* .tv_usec updated in preempt_save */
-	sigaddset(&alarmMask, SIGVTALRM);                   /* Save for fast masking of alarm */
+	/* ************************************************ */
+	restoreTimer = it;                                  /* .tv_usec updated in preempt_save         */
+	sigaddset(&alarmMask, SIGVTALRM);                   /* Save for fast masking of alarm           */
+	/* ************************************************ */
 
 	if (setitimer(IT_VIRT, &it, NULL)) {
 		perror("setitimer");

@@ -105,7 +105,7 @@ int queue_delete(queue_t queue, void *data)
     curr = queue->head;                                 /* Current node is the head             */
     tmp = NULL;                                         /* Temporary node                       */
 
-    while(curr->next != queue->head) {                  /* While more items in the queue        */
+    while(curr->next != queue->head) {                  /* While more items in circular queue   */
         if (curr->data == data) {                       /* If data is found                     */
             tmp = curr->next;                           /* Store pointer to next node           */
             curr->data = tmp->data;                     /* Overwrite data w/ next node data     */
@@ -117,10 +117,10 @@ int queue_delete(queue_t queue, void *data)
             return SUCCESS;                             /* Data was found, return success       */
         }
         tmp = curr;                                     /* Save node as temporary node          */
-        curr = curr->next;                              /* Iterate to next node                 */
+        curr = curr->next;                              /* Iterate through the circular queue   */
     }                                                   /* End while loop                       */
 
-    if(curr->data == data) {                            /* Check last item in queue             */
+    if(curr->data == data) {                            /* Check last item in circular queue    */
         if (curr == queue->head) {                      /* If its the head, only 1 item in Q    */
             queue->head = NULL;                         /* Nullify the head                     */
             queue->tail = NULL;                         /* Nullify the tail                     */
@@ -137,7 +137,7 @@ int queue_delete(queue_t queue, void *data)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                    Queue Iterate                     */
+/*               Queue Iterate (UNUSED)                 */
 /* **************************************************** */
 int queue_iterate(queue_t queue, queue_func_t func)
 {
@@ -145,16 +145,16 @@ int queue_iterate(queue_t queue, queue_func_t func)
 
     if (func == NULL)           return FAIL;            /* Passed NULL function, return fail    */
     if (queue == NULL)          return FAIL;            /* Passed NULL queue, return fail       */
-    if (queue->head == NULL)    return SUCCESS;         /* Nothing 2 iterate, return no worries */
+    if (queue->head == NULL)    return SUCCESS;         /* Nothing 2 iterate, return success    */
 
-    curr = queue->head;                                 /* Set node pointer to head of queue    */
+    curr = queue->head;                                 /* Set node pointer to the head of queue*/
     tmp  = NULL;                                        /* Set temporary pointer                */
 
-    while (curr->next != queue->head) {                 /* Iterate through the queue            */
+    while (curr->next != queue->head) {                 /* Iterate through the circular queue   */
         tmp = curr->next;                               /* Store next pointer in case deleted   */
         func(curr->data);                               /* Call the function                    */
 
-        if (tmp == curr->next)                          /* If the node was NOT deleted          */
+        if (tmp == curr->next)                          /* If the node was NOT overwritten      */
             curr = curr->next;                          /* Iterate to next node                 */
     }                                                   /* End while loop                       */
 

@@ -18,7 +18,7 @@
 /*                 Semaphore Structures                 */
 /* **************************************************** */
 typedef struct semaphore {
-    size_t count;                                       /* Semaphore count long unsigned int    */
+    size_t count;                                       /* Semaphore count - long unsigned int  */
     queue_t waitQ;                                      /* Queue of threads waiting for sem     */
 } semaphore;
 
@@ -49,11 +49,11 @@ int sem_destroy(sem_t sem)
 /* **************************************************** */
 int sem_down(sem_t sem)
 {
-    if(sem->count == 0) {                               /* Check if currently zero              */
+    if(sem->count == 0) {                               /* Check if currently zero, If yes...   */
         queue_enqueue(sem->waitQ, uthread_current());   /* Add thread to the semaphore's queue  */
         uthread_block();                                /* Block the thread                     */
     } else sem->count--;                                /* Otherwise decrement the semaphore    */
-    return SUCCESS;                                     /* Return SUCCESS                       */
+    return SUCCESS;                                     /* Return success                       */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -63,10 +63,10 @@ int sem_up(sem_t sem)
 {
     struct uthread_tcb *thread;
     if(sem->count == 0) {                                /* If incremented count == 0           */
-        if(!queue_dequeue(sem->waitQ, (void **) &thread))/* If items to dequeue exist           */
+        if(!queue_dequeue(sem->waitQ, (void **) &thread))/* Check if items to dequeue exist     */
             uthread_unblock(thread);                     /* Unblock the first item in the queue */
-        else sem->count++;
-    } else sem->count++;
-    return SUCCESS;
+        else sem->count++;                               /* Otherwise increment the count       */
+    } else sem->count++;                                 /* Count != 0 so increment it          */
+    return SUCCESS;                                      /* Return success                      */
 }
 /* **************************************************** */
