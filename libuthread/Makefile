@@ -22,4 +22,3 @@ $(TARGET): $(OBJECTS)
 	$(AR) $(AFLAGS) $(TARGET) $(OBJECTS)
 	ranlib $(TARGET)
 
-
