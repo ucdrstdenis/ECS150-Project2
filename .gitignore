@@ -8,9 +8,6 @@ test5
 test-queue
 libuthread.a
 
-# Custom compile scripts
-rmake.sh
-
 # Git bundles
 *.bundle
 
