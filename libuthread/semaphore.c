@@ -5,7 +5,7 @@
 #define _UTHREAD_PRIVATE
 #include "preempt.h"
 #include "queue.h"
-#include "semaphore.h"                                  /* sem_t is a pointer to a semaphore */
+#include "semaphore.h"                                  /* sem_t is a pointer to a semaphore    */
 #include "uthread.h"
 
 /* **************************************************** */
@@ -62,7 +62,7 @@ int sem_down(sem_t sem)
 int sem_up(sem_t sem)
 {
     struct uthread_tcb *thread;
-    if(sem->count == 0) {                                /* If incremented count == 0            */
+    if(sem->count == 0) {                                /* If incremented count == 0           */
         if(!queue_dequeue(sem->waitQ, (void **) &thread))/* If items to dequeue exist           */
             uthread_unblock(thread);                     /* Unblock the first item in the queue */
         else sem->count++;
