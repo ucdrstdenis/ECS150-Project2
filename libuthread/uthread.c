@@ -27,8 +27,6 @@ queue_t RunQ;                                           /* Global pointer to Run
 queue_t WaitQ;                                          /* Global pointer to Blocked Queue          */
 queue_t DoneQ;                                          /* Global pointer to Done Queue             */
 
-const sigset_t *alarmMask;                              /* Holds the Mask for SIGVTALRM             */
-
 /* **************************************************** */
 /*                  uThread Structures                  */
 /* **************************************************** */
@@ -39,20 +37,22 @@ typedef enum  {                                         /* See Anderson Textbook
     DONE    = 0x03                                      /* Finished list, Regs to be deleted        */
 } uthread_state_t;
 
+typedef struct itimerval    utime_t;                     /* Typedef for convenience                 */
+typedef struct uthread_tcb  utcb;                        /* Typedef for convenience                 */
+typedef uthread_state_t     ustate;                      /* Typedef for convenience                 */
+
 struct uthread_tcb {
     uthread_state_t state;                              /* Holds the thread's state                 */
     uthread_func_t func;                                /* Pointer to thread function               */
     uthread_ctx_t *uctx;                                /* User level thread context                */
     sigset_t *sigset;                                   /* Save the current preemption masks        */
-    struct itimerval *it;                               /* Save the current timer value             */
+    //utime_t *it;                                        /* Save the current timer values            */
     void *arg;                                          /* Pointer to thread function arg           */
     void *stack;                                        /* Pointer to the top of the stack          */
     //tid_t tid;                                        /* TODO thread ID, pull from POOL           */
     //unsigned char priority;                           /* TODO QoS, 0-20 on Linux (I think)        */
 };
 
-typedef struct uthread_tcb utcb;                        /* Typedef for convenience                  */
-typedef uthread_state_t ustate;                         /* Typedef for convenience                  */
 /* **************************************************** */
 /* **************************************************** */
 /*                Static uThread Enqueue                */
@@ -75,7 +75,7 @@ static int uthread_enqueue(utcb *tcb, ustate state)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                     uThread Yield                    */
+/*                    uThread Yield                     */
 /* **************************************************** */
 void uthread_yield(void)
 {                                                       /* See Fig 4.14 in Anderson Textbook        */
@@ -106,11 +106,12 @@ static utcb *uthread_init(uthread_func_t func, void *arg)
     struct uthread_tcb *tcb = malloc(sizeof(utcb));     /* Alloc thread control block structure     */
     tcb->uctx   = malloc(sizeof(uthread_ctx_t));        /* Alloc user-level thread context struct   */
     tcb->sigset = malloc(sizeof(sigset_t));             /* Alloc sigset object                      */
-    tcb->it     = malloc(sizeof(struct ittimerval));    /* Alloc ittimerval object                  */
+    //tcb->it     = malloc(sizeof(utime_t));              /* Alloc ittimerval object                  */
     tcb->func   = func;                                 /* Set the TCB function pointer             */
     tcb->arg    = arg;                                  /* Set the TCB function argument pointer    */
     tcb->state  = READY;                                /* Set the TCB state                        */
-    return tcb;                                         /* Return pointer to the TCB                */
+
+    return tcb;                                         /* Return the pointer                       */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -178,7 +179,7 @@ void uthread_unblock(struct uthread_tcb *uthread)
 struct uthread_tcb *uthread_current(void)
 {
     struct uthread_tcb *current;                        /* This only works if RunQ has max of 1 thread  */
-    queue_dequeue(RunQ, (void **) &current);            /* Get the running TCB pointer from the queue   */
+    queue_dequeue(RunQ, (void **) &current);            /* Get the running TCB pointer from queue       */
     queue_enqueue(RunQ, (void *) current);              /* Add it back to the running queue             */
     return current;                                     /* Return pointer to currently running thread   */
 }
@@ -197,7 +198,8 @@ void uthread_start(uthread_func_t start, void *arg)
     /* Create initial & 1st thread */
     utcb *initThread = uthread_init(NULL, NULL);        /* Alloc/init a TCB to the idle thread          */
     uthread_enqueue(initThread, RUNNING);               /* Set the state, add to running queue          */
-    uthread_create(start, arg);                         /* Create 1 thread, auto-add to ready queue     */
+    preempt_start();                                    /* Start the timer for the running thread       */
+    uthread_create(start, arg);                         /* Create 1 thread, add to ready queue          */
 
     while(queue_length(ReadyQ))     uthread_yield();    /* Ready threads exist? Switch to next thread   */
 

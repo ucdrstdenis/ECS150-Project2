@@ -9,28 +9,60 @@
 #define _UTHREAD_PRIVATE
 #include "preempt.h"
 #include "uthread.h"
+#include <time.h>                                       /* For checking timer interval works. Remove after debug */
 
-/*
- * Frequency of preemption
- * 100Hz is 100 times per second
- */
-#define HZ      100
-#define ITVAL   1000000 / HZ
-#define IT_VIRT ITIMER_VIRTUAL
-#define MAGIC_NUMBER  33554432                          /* Value of __val[0] when SIGVTALRM is set */
+/* **************************************************** */
+/*                   Preempt #DEFINES                   */
+/* **************************************************** */
+#define HZ              100                             /* Frequency of preemption 100Hz              */
+#define ITVAL           1000000 / HZ                    /* Convenience                                */
+#define IT_VIRT         ITIMER_VIRTUAL                  /* Only counts while process is running       */
+#define MAGIC_NUMBER    0x2000000                       /* *sigset_t->__val[0] if SIGVTALRM is masked */
 
-static const sigset_t alarmMask;
-static const struct itimerval disableTimer;
+/* **************************************************** */
+/*                   Preempt Globals                    */
+/* **************************************************** */
+static sigset_t alarmMask;                              /* sigset_t->__val[0] = MAGIC_NUMBER          */
+static struct itimerval disableTimer = {                /* For fast disabling of the timer            */
+        .it_value.tv_usec     = 0,                      /* These guys are long ints, 8 Bytes          */
+        .it_value.tv_sec      = 0,
+        .it_interval.tv_usec  = ITVAL,
+        .it_interval.tv_sec   = 0
+};
+static struct itimerval restoreTimer;                   /* Initialized in preempt_start               */
 
+
+clock_t last, now;                                      /* For checking timer interval works          */
 /* **************************************************** */
 /*                      Preempt Save                    */
 /* **************************************************** */
 void preempt_save(sigset_t *level)
 {
     printf("Masking Interrupt\n");
-    sigprocmask(SIG_BLOCK, &alarmMask, level);          /* Mask the interrupt, level is current->sigset_t */
-    getitimer(IT_VIRT, uthread_current()->it);          /* Store the current preemption state             */
-    preempt_disable();                                  /* Disable the timer interrupts                   */
+
+    struct itimerval it;
+    long int save;
+
+    sigprocmask(SIG_BLOCK, &alarmMask, level);          /* Mask the interrupt                           */
+    getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock          */
+
+    /*
+     * Below only works because SIGVTALRM is the
+     * only signal that we care about.
+     * If other signals were of concern, or
+     * .tv_usec were much larger than 10000
+     * this could go very very wrong.
+     */
+
+    save = (MAGIC_NUMBER | it.it_value.tv_usec);        /* Bitwise OR with the MAGIC NUMBER              */
+    level->__val[0] = save;                             /* Save remaining time inside current->sigset_t  */
+
+    /*
+     * Could also skip the | and just store it
+     * inside  __val[1-15]. Not as much fun. ;)
+     */
+
+    preempt_disable();                                  /* Disable the timer                             */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -38,8 +70,14 @@ void preempt_save(sigset_t *level)
 /* **************************************************** */
 void preempt_restore(sigset_t *level)
 {
-    preempt_enable();                                  /* Enable timer preemption                         */
-    sigprocmask(SIG_UNBLOCK, &alarmMask, level);       /* Un-mask the interrupt                           */
+  long unsigned int timeLeft;                           /* Remaining tv_usec after extraction            */
+
+  timeLeft = (~MAGIC_NUMBER & level->__val[0]);         /* Bitwise AND with inverted MAGIC NUMBER        */
+  restoreTimer.it_value.tv_usec = (long int) timeLeft;  /* Save in the global to pass to preempt enable  */
+  level->__val[0] = MAGIC_NUMBER;                       /* Get rid of the saved remaining time           */
+
+  preempt_enable();                                     /* Enable preemption, pick up with timeLeft      */
+  sigprocmask(SIG_UNBLOCK, &alarmMask, level);          /* Un-mask the interrupt                         */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -47,9 +85,10 @@ void preempt_restore(sigset_t *level)
 /* **************************************************** */
 void preempt_enable(void)
 {
-    if (setitimer(IT_VIRT, uthread_current()->it, NULL)) {
-        perror("setitimer");
-        exit(1);
+    printf("Enabling timer\n");
+    if (setitimer(IT_VIRT, &restoreTimer, NULL)) {
+         perror("setitimer");
+         exit(1);
     }
 }
 /* **************************************************** */
@@ -58,11 +97,11 @@ void preempt_enable(void)
 /* **************************************************** */
 void preempt_disable(void)
 {
-    printf("Disabling timer\n");
-    if (setitimer(IT_VIRT, &disableTimer, NULL)) {      /* DisableTimer is a static const global            */
+   printf("Disabling timer\n");
+   if (setitimer(IT_VIRT, &disableTimer, NULL)) {
         perror("setitimer");
         exit(1);
-    }
+   }
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -70,26 +109,9 @@ void preempt_disable(void)
 /* **************************************************** */
 bool preempt_disabled(void)
 {
- //   sigset_t *level = malloc(sizeof(sigset_t));
- //   sigprocmask(SIG_SETMASK, NULL, level);
-    //printf("disabled? %lu", level->)  /*unsigned long int/
-
-   // printf("\n\n\n");
-   // sigaddset(level, SIGVTALRM);
-
-    //for (i=0; i< _SIGSET_NWORDS; i++)
-     //   printf("%lu\n", level->__val[i]);
-
-
-   sigset_t *sigset = uthread_current()->sigset;
-   return (bool) sigismember(sigset, SIGVTALRM);
-
-   //struct itimerval it;
-   //getitimer(ITIMER_VIRTUAL, &it);
-   // printf("DEBUG: disabled? value = %d", it.it_value.tv_usec);
-   // printf("\n\n\n\n");
-   // if (it.it_value.tv_usec) return true;
-   // else                     return false;
+    struct itimerval it;
+    getitimer(ITIMER_VIRTUAL, &it);
+    return (bool) (it.it_interval.tv_usec > 0);
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -101,7 +123,13 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
-    printf("DEBUG: timer handler, signal=%d\n", signo);
+    struct itimerval it;
+    getitimer(ITIMER_VIRTUAL, &it);
+
+    //now = clock();
+    //float diff = ((float)(now - last) / 1000000.0F ) * 1000;
+    //printf("%f\n",diff);
+    //last = clock();
     uthread_yield();
 
 }
@@ -112,17 +140,13 @@ static void timer_handler(int signo)
 void preempt_start(void)
 {
 	struct sigaction sa;
-	struct itimerval it;
+	static struct itimerval it;
 
 	/*
 	 * Install signal handler @timer_handler for dealing with alarm signals
 	 */
-
 	sa.sa_handler = timer_handler;
 	sigemptyset(&sa.sa_mask);                           /* Don't block any signals that are received */
-
-    sigaddset(alarmMask, SIGVTALRM);                    /* Store the alarm mask in a global for re-use */
-
 
 	/* Make functions such as read() or write() to restart instead of
 	 * failing when interrupted */
@@ -135,21 +159,19 @@ void preempt_start(void)
 	/*
 	 * Configure timer to fire alarm signals at a certain frequency
 	 */
-	it.it_value.tv_sec = 0;
-	it.it_value.tv_usec = 1000000 / HZ;                 /* 10,000 us - 10 ms */
-	it.it_interval.tv_sec = 0;
-	it.it_interval.tv_usec = 1000000 / HZ;              /* 10,000 us - 10 ms */
-	if (setitimer(ITIMER_VIRTUAL, &it, NULL)) {         /* Timer only decrements while process runs */
+	it.it_value.tv_sec     = 0;
+	it.it_value.tv_usec    = ITVAL;                     /* 10,000 us - 10 ms */
+	it.it_interval.tv_sec  = 0;
+	it.it_interval.tv_usec = ITVAL;;                    /* 10,000 us - 10 ms */
+
+	restoreTimer = it;                                    /* .tv_usec will be updated in preempt_save */
+	sigaddset(&alarmMask, SIGVTALRM);                   /* Save for fast masking of alarm */
+
+	if (setitimer(ITIMER_VIRTUAL, &it, NULL)) {
 		perror("setitimer");
 		exit(1);
 	}
 
-	/*
-	 * Initialize itimerval for fast disabling of timer
-	 */
-	disableTimer.it_value.tv_sec = 0;
-	disableTimer.it_value.tv_usec = 0;
-	disableTimer.it_interval.tv_sec = 0;
-	disableTimer.it_interval.tv_usec = 0;
+	last = clock();
 }
 /* **************************************************** */
