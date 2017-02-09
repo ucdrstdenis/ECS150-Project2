@@ -27,6 +27,8 @@ queue_t RunQ;                                           /* Global pointer to Run
 queue_t WaitQ;                                          /* Global pointer to Blocked Queue          */
 queue_t DoneQ;                                          /* Global pointer to Done Queue             */
 
+const sigset_t *alarmMask;                              /* Holds the Mask for SIGVTALRM             */
+
 /* **************************************************** */
 /*                  uThread Structures                  */
 /* **************************************************** */
@@ -41,9 +43,12 @@ struct uthread_tcb {
     uthread_state_t state;                              /* Holds the thread's state                 */
     uthread_func_t func;                                /* Pointer to thread function               */
     uthread_ctx_t *uctx;                                /* User level thread context                */
-    sigset_t *sigset;                                   /* Save preemption signals                  */
+    sigset_t *sigset;                                   /* Save the current preemption masks        */
+    struct itimerval *it;                               /* Save the current timer value             */
     void *arg;                                          /* Pointer to thread function arg           */
     void *stack;                                        /* Pointer to the top of the stack          */
+    //tid_t tid;                                        /* TODO thread ID, pull from POOL           */
+    //unsigned char priority;                           /* TODO QoS, 0-20 on Linux (I think)        */
 };
 
 typedef struct uthread_tcb utcb;                        /* Typedef for convenience                  */
@@ -75,7 +80,7 @@ static int uthread_enqueue(utcb *tcb, ustate state)
 void uthread_yield(void)
 {                                                       /* See Fig 4.14 in Anderson Textbook        */
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
-
+    preempt_disabled();
     preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
@@ -101,6 +106,7 @@ static utcb *uthread_init(uthread_func_t func, void *arg)
     struct uthread_tcb *tcb = malloc(sizeof(utcb));     /* Alloc thread control block structure     */
     tcb->uctx   = malloc(sizeof(uthread_ctx_t));        /* Alloc user-level thread context struct   */
     tcb->sigset = malloc(sizeof(sigset_t));             /* Alloc sigset object                      */
+    tcb->it     = malloc(sizeof(struct ittimerval));    /* Alloc ittimerval object                  */
     tcb->func   = func;                                 /* Set the TCB function pointer             */
     tcb->arg    = arg;                                  /* Set the TCB function argument pointer    */
     tcb->state  = READY;                                /* Set the TCB state                        */
@@ -132,8 +138,8 @@ void uthread_exit(void)
 
     preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
-    uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     queue_dequeue(ReadyQ, (void **) &next);             /* Get the next TCB from the ready queue    */
+    uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
     preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
@@ -187,8 +193,6 @@ void uthread_start(uthread_func_t start, void *arg)
 
     for (i = 0; i < NQUEUES; i++)                       /* For each queue in QArray[]                   */
         *QArray[i] = queue_create();                    /* Alloc/init global pointer to each queue      */
-
-    preempt_start();                                    /* Setup the timer handler                      */
 
     /* Create initial & 1st thread */
     utcb *initThread = uthread_init(NULL, NULL);        /* Alloc/init a TCB to the idle thread          */
