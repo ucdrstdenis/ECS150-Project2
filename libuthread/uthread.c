@@ -45,8 +45,7 @@ struct uthread_tcb {
     uthread_state_t state;                              /* Holds the thread's state                 */
     uthread_func_t func;                                /* Pointer to thread function               */
     uthread_ctx_t *uctx;                                /* User level thread context                */
-    sigset_t *sigset;                                   /* Save the current preemption masks        */
-    //utime_t *it;                                        /* Save the current timer values            */
+    sigset_t *sigset;                                   /* Save preemption masks & time remaining   */
     void *arg;                                          /* Pointer to thread function arg           */
     void *stack;                                        /* Pointer to the top of the stack          */
     //tid_t tid;                                        /* TODO thread ID, pull from POOL           */
@@ -60,7 +59,6 @@ struct uthread_tcb {
 static int uthread_enqueue(utcb *tcb, ustate state)
 {                                                       /* Function for convenience                 */
     tcb->state = state;                                 /* Set the state and ...                    */
-
     switch(state) {                                     /* choose queue to add the thread to        */
         case READY:                                     /* Add to ready queue                       */
             return queue_enqueue(ReadyQ, (void *) tcb);
@@ -90,9 +88,10 @@ void uthread_yield(void)
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
     }
 
-    while(!queue_dequeue(DoneQ, (void **) &doneTCB)) {  /* While threads to deQ exist in DoneQ      */
+    while(!queue_dequeue(DoneQ, (void **) &doneTCB)) {  /* While threads exist in DoneQ             */
         uthread_ctx_destroy_stack(doneTCB->stack);      /* Destroy their stacks                     */
         free(doneTCB->uctx);                            /* Free user-level thread contexts          */
+        free(doneTCB->sigset);                          /* Free the sigset_t                        */
         free(doneTCB);                                  /* Free TCBs from memory                    */
     }
     preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
@@ -106,11 +105,9 @@ static utcb *uthread_init(uthread_func_t func, void *arg)
     struct uthread_tcb *tcb = malloc(sizeof(utcb));     /* Alloc thread control block structure     */
     tcb->uctx   = malloc(sizeof(uthread_ctx_t));        /* Alloc user-level thread context struct   */
     tcb->sigset = malloc(sizeof(sigset_t));             /* Alloc sigset object                      */
-    //tcb->it     = malloc(sizeof(utime_t));              /* Alloc ittimerval object                  */
     tcb->func   = func;                                 /* Set the TCB function pointer             */
     tcb->arg    = arg;                                  /* Set the TCB function argument pointer    */
     tcb->state  = READY;                                /* Set the TCB state                        */
-
     return tcb;                                         /* Return the pointer                       */
 }
 /* **************************************************** */
@@ -170,7 +167,7 @@ void uthread_unblock(struct uthread_tcb *uthread)
     preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
     queue_delete(WaitQ, (void *) uthread);              /* Remove the tcb from the waiting queue    */
     uthread_enqueue(uthread, READY);                    /* Queue the tcb to the ready queue         */
-    preempt_enable();                                   /* Enable interrupts                        */
+    preempt_restore(uthread_current()->sigset);         /* Restore signal state, enable interrupts  */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -206,6 +203,7 @@ void uthread_start(uthread_func_t start, void *arg)
     /* Memory cleanup */
     queue_delete(RunQ, (void *) initThread);            /* Remove initThread from the running queue     */
     free(initThread->uctx);                             /* Free user-level thread context               */
+    free(initThread->sigset);                           /* Free sigset struct                           */
     free(initThread);                                   /* Free TCB from memory                         */
     for (i = 0; i < NQUEUES; i++)                       /* For each queue in QArray[]                   */
        queue_destroy(*QArray[i]);                       /* Destroy the queue                            */

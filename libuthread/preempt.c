@@ -9,13 +9,11 @@
 #define _UTHREAD_PRIVATE
 #include "preempt.h"
 #include "uthread.h"
-#include <time.h>                                       /* For checking timer interval works. Remove after debug */
 
 /* **************************************************** */
 /*                   Preempt #DEFINES                   */
 /* **************************************************** */
 #define HZ              100                             /* Frequency of preemption 100Hz              */
-#define ITVAL           1000000 / HZ                    /* Convenience                                */
 #define IT_VIRT         ITIMER_VIRTUAL                  /* Only counts while process is running       */
 #define MAGIC_NUMBER    0x2000000                       /* *sigset_t->__val[0] if SIGVTALRM is masked */
 
@@ -26,20 +24,15 @@ static sigset_t alarmMask;                              /* sigset_t->__val[0] = 
 static struct itimerval disableTimer = {                /* For fast disabling of the timer            */
         .it_value.tv_usec     = 0,                      /* These guys are long ints, 8 Bytes          */
         .it_value.tv_sec      = 0,
-        .it_interval.tv_usec  = ITVAL,
+        .it_interval.tv_usec  = 1000000 / HZ,
         .it_interval.tv_sec   = 0
 };
 static struct itimerval restoreTimer;                   /* Initialized in preempt_start               */
-
-
-clock_t last, now;                                      /* For checking timer interval works          */
 /* **************************************************** */
 /*                      Preempt Save                    */
 /* **************************************************** */
 void preempt_save(sigset_t *level)
 {
-    printf("Masking Interrupt\n");
-
     struct itimerval it;
     long int save;
 
@@ -85,7 +78,6 @@ void preempt_restore(sigset_t *level)
 /* **************************************************** */
 void preempt_enable(void)
 {
-    printf("Enabling timer\n");
     if (setitimer(IT_VIRT, &restoreTimer, NULL)) {
          perror("setitimer");
          exit(1);
@@ -97,7 +89,6 @@ void preempt_enable(void)
 /* **************************************************** */
 void preempt_disable(void)
 {
-   printf("Disabling timer\n");
    if (setitimer(IT_VIRT, &disableTimer, NULL)) {
         perror("setitimer");
         exit(1);
@@ -123,15 +114,7 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
-    struct itimerval it;
-    getitimer(ITIMER_VIRTUAL, &it);
-
-    //now = clock();
-    //float diff = ((float)(now - last) / 1000000.0F ) * 1000;
-    //printf("%f\n",diff);
-    //last = clock();
     uthread_yield();
-
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -149,7 +132,8 @@ void preempt_start(void)
 	sigemptyset(&sa.sa_mask);                           /* Don't block any signals that are received */
 
 	/* Make functions such as read() or write() to restart instead of
-	 * failing when interrupted */
+	 * failing when interrupted
+	 */
 	sa.sa_flags = SA_RESTART;
 	if (sigaction(SIGVTALRM, &sa, NULL)) {
 		perror("sigaction");
@@ -160,18 +144,16 @@ void preempt_start(void)
 	 * Configure timer to fire alarm signals at a certain frequency
 	 */
 	it.it_value.tv_sec     = 0;
-	it.it_value.tv_usec    = ITVAL;                     /* 10,000 us - 10 ms */
+	it.it_value.tv_usec    = 1000000 / HZ;              /* 10,000 us - 10 ms */
 	it.it_interval.tv_sec  = 0;
-	it.it_interval.tv_usec = ITVAL;;                    /* 10,000 us - 10 ms */
+	it.it_interval.tv_usec = 1000000 / HZ;;             /* 10,000 us - 10 ms */
 
-	restoreTimer = it;                                    /* .tv_usec will be updated in preempt_save */
+	restoreTimer = it;                                  /* .tv_usec will be updated in preempt_save */
 	sigaddset(&alarmMask, SIGVTALRM);                   /* Save for fast masking of alarm */
 
-	if (setitimer(ITIMER_VIRTUAL, &it, NULL)) {
+	if (setitimer(IT_VIRT, &it, NULL)) {
 		perror("setitimer");
 		exit(1);
 	}
-
-	last = clock();
 }
 /* **************************************************** */
