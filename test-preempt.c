@@ -1,8 +1,8 @@
 /*
- * Simple hello world test
- *
- * Tests the creation of a single thread and its successful return.
- */
+ * Keeps thread in loop that goes forever 
+ * Purpose was to check preempt debug output
+ * Doesn't do anything once debug statements removed
+*/
 
 #include <stdio.h>
 #include <stdlib.h>

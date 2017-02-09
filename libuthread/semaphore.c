@@ -7,7 +7,6 @@
 #include "queue.h"
 #include "semaphore.h"                                  /* sem_t is a pointer to a semaphore */
 #include "uthread.h"
-#include <stdio.h>                                      /* For printf. Remove when done debugging */
 
 /* **************************************************** */
 /*                 Semaphore #DEFINES                   */
@@ -41,7 +40,7 @@ sem_t sem_create(size_t count)
 int sem_destroy(sem_t sem)
 {
     if(queue_destroy(sem->waitQ)) return FAIL;          /* Queue destroy failed, return FAIL    */
-	free(sem);                                          /* Deallocate the memory                */
+    free(sem);                                          /* Deallocate the memory                */
     return SUCCESS;                                     /* Return success                       */
 }
 /* **************************************************** */
@@ -52,8 +51,8 @@ int sem_down(sem_t sem)
 {
     if(sem->count == 0) {                               /* Check if currently zero              */
         queue_enqueue(sem->waitQ, uthread_current());   /* Add thread to the semaphore's queue  */
-	    uthread_block();                                /* Block the thread                     */
-	} else sem->count--;                                /* Otherwise decrement the semaphore    */
+        uthread_block();                                /* Block the thread                     */
+    } else sem->count--;                                /* Otherwise decrement the semaphore    */
     return SUCCESS;                                     /* Return SUCCESS                       */
 }
 /* **************************************************** */
@@ -64,9 +63,9 @@ int sem_up(sem_t sem)
 {
     struct uthread_tcb *thread;
     if(sem->count == 0) {                                /* If incremented count == 0            */
-	    if(!queue_dequeue(sem->waitQ, (void **) &thread))/* If items to dequeue exist           */
-	        uthread_unblock(thread);                     /* Unblock the first item in the queue */
-	    else sem->count++;
+        if(!queue_dequeue(sem->waitQ, (void **) &thread))/* If items to dequeue exist           */
+            uthread_unblock(thread);                     /* Unblock the first item in the queue */
+        else sem->count++;
     } else sem->count++;
     return SUCCESS;
 }
