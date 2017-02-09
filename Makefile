@@ -1,5 +1,5 @@
 # Target programs
-programs := test-queue test1 test2 test3 test4 test5 test-preempt
+programs := test1 test2 test3 test4 test5
 
 # User-level thread library
 UTHREADLIB=libuthread
