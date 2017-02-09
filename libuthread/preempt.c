@@ -19,7 +19,7 @@
 #define MAGIC_NUMBER    0x2000000                       /* sigset_t->__val[0] if SIGVTALRM is masked */
 
 /* **************************************************** */
-/*                   Preempt Globals                    */
+/*                    Preempt Globals                   */
 /* **************************************************** */
 static sigset_t alarmMask;                              /* For faster masking of interrupts          */
 static struct itimerval disableTimer = {                /* For faster disabling of the timer         */
@@ -30,7 +30,7 @@ static struct itimerval disableTimer = {                /* For faster disabling 
 };
 static struct itimerval restoreTimer;                   /* Initialized in preempt_start              */
 /* **************************************************** */
-/*                      Preempt Save                    */
+/*                     Preempt Save                     */
 /* **************************************************** */
 void preempt_save(sigset_t *level)
 {
@@ -86,14 +86,14 @@ void preempt_enable(void)
 }
 /* **************************************************** */
 /* **************************************************** */
-/*                    Preempt Disable                   */
+/*                   Preempt Disable                    */
 /* **************************************************** */
 void preempt_disable(void)
 {
-   if (setitimer(IT_VIRT, &disableTimer, NULL)) {       /* Disable the timer                        */
+    if (setitimer(IT_VIRT, &disableTimer, NULL)) {      /* Disable the timer                        */
         perror("setitimer");
         exit(1);
-   }
+    }
 }
 /* **************************************************** */
 /* **************************************************** */
