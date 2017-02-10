@@ -8,7 +8,7 @@ Overall, our uthread library `libuthread.a` was implemented with code readabilit
 
 Our queue API uses a circular queue for robustness with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
 
-Our key design choice in `uthread.c` was to use an array of global queues rather than two individual queues and a pointer to the running thread. Not only did this result in higher frequency use of the `queue_` functions, but the exit logic of our `uthread_start()` loop can be implemented in a single line:
+Our key design choice in `uthread.c` was to use an array of global queues rather than two individual queues and a pointer to the running thread. Not only did this result in higher frequency use of the `queue_` functions, but the exit logic of our `uthread_start()` loop can be performed in a single line:
 
 ``` c
 while(queue_length(ReadyQ)) 	uthread_yield();
