@@ -3,22 +3,10 @@
 ## Contributors ##
 Robert St. Denis & Liem Nguyen
 
-also by:
-
-Liem Nguyen & Robert St. Denis
-
-## Building / Running ##
-This program was compiled using the Linux gcc 6.3.1 compiler.
-
-To build, cd to the folder in a terminal.
-
-Then type `make` and let `Makefile` and `libuthread/Makefile` do the rest.
-
-After building, the shell can be run by typing `./sshell`
 ## Design Choices ##
 
 ## A "Brief" Overview of libuthread.a ##
-### Phase 1 - FIFO Queues ###
+### Phase 1 - A Queue API ###
 We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures as typedefs, then defined the functions `queue_create()`, `queue_destroy()`, `queue_enqueue()`, `queue_dequeue()`, `queue_delete()`, `queue_iterate()`, and `queue_length()`. All implementations excluding `queue_iterate()` and `queue_delete()` are *O(1)*.
 
 For `queue_create()`, a queue is malloc'd and if malloc fails, a NULL pointer is returned from the function. If malloc successeds the queue's head and tail are set to NULL, the length to zero, and the pointer is returned.
@@ -94,6 +82,16 @@ For preempt_disabled, we simply check if the preemption is currently disabled.
 For timer_handler, we can force the currently running thread to yield in order for another thread to be scheduled instead by calling uthread_yield().
 
 If the outputs for test 1-5 are the same while running preempt.c with our modifications, then we know our function implementations were successful, which they were.
+
+## Building / Running ##
+This program was compiled using the Linux gcc 6.3.1 compiler.
+
+To build, cd to the folder in a terminal.
+
+Then type `make` and let `Makefile` and `libuthread/Makefile` do the rest.
+
+After building, the tests 1 through 5 can be run by typing `./testX`
+where `X` represents the test number.
 
 # References #
 1. Operating Systems Principles and Practice (Chapter 4).
