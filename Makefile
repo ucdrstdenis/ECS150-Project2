@@ -63,6 +63,6 @@ clean:
 	@echo "CLEAN	$(CUR_PWD)"
 	$(Q)$(MAKE) V=$(V) -C $(UTHREADLIB) clean
 	$(Q)rm -rf $(objs) $(deps) $(programs)
-
+ 
 .PHONY: clean $(libuthread)
 
