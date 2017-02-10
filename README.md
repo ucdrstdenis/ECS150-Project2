@@ -14,11 +14,16 @@ Our key design choice in `uthread.c` was to use an array of global queues `Ready
 while(queue_length(ReadyQ)) 	uthread_yield();
 ``````
 
-`uthread.c` was also thoroughly checked for memory leaks, and all queues are deallocated and freed without error at the end of `uthread_start()`.
+`uthread.c` was also thoroughly checked for memory leaks using tests 1-5, and all queues are deallocated and freed without error at the end of `uthread_start()`.
+
+All threads also maintain a `uthread_state_t` typdef'd as an enum with 4 unique states. 
 
 `semaphore.c` is both straightforward and brief. The structure holds only a single `size_t` and a `queue_t` of blocked threads.
 
-`preempt.c` is brief, but contains some very specific design choices.
+`preempt.c` is brief, but contains some very specific design choices. When the `SIGVTALRM` signal is masked.
+
+## Additional Files ##
+
  
 
 ## A "Brief" Overview of libuthread.a ##
