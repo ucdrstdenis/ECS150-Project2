@@ -1,11 +1,19 @@
 % ECS 150: Project #2 - User-level thread library
 
-# General information
-We approached each phase individually, from the beginning stages of phase 1, to the final stages of phase 4.
+# Contributors #
+Robert St. Denis & Liem Nguyen
+
+also by:
+
+Liem Nguyen & Robert St. Denis
+
+# Compiling / Running #
+
+# Design Choices #
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - FIFO Queues ###
-We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures as typedefs, then defined the functions `queue_create()`, `queue_destroy()`, `queue_enqueue()`, `queue_dequeue()`, `queue_delete()`, `queue_iterate()`, and `queue_length()`. All implementations excluding `queue_iterate()` and `queue_delete()` are O(1).
+We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures as typedefs, then defined the functions `queue_create()`, `queue_destroy()`, `queue_enqueue()`, `queue_dequeue()`, `queue_delete()`, `queue_iterate()`, and `queue_length()`. All implementations excluding `queue_iterate()` and `queue_delete()` are *O(1)*.
 
 For `queue_create()`, a queue is malloc'd and if malloc fails, a NULL pointer is returned from the function. If malloc successeds the queue's head and tail are set to NULL, the length to zero, and the pointer is returned.
 
@@ -81,4 +89,7 @@ For timer_handler, we can force the currently running thread to yield in order f
 
 If the outputs for test 1-5 are the same while running preempt.c with our modifications, then we know our function implementations were successful, which they were.
 
+# References #
+1. Operating Systems Principles and Practice (Chapter 4).
+2. Man page for sigsetops
 
