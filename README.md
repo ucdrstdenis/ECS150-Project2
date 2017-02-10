@@ -5,6 +5,7 @@ Robert St. Denis & Liem Nguyen
 
 ## Design Choices ##
 Overall, our version of libuthread was implemented with robustness and code readability in mind. No .h files were added or modified to ensure high-quality coding practice was maintained. Our queue API uses a circular queue with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
+We
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
