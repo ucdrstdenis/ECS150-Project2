@@ -1,11 +1,23 @@
-% ECS 150: Project #2 - User-level thread library
-
+# ECS 150: Project #2 - User-level thread library #
+ 
 ## Contributors ##
 Robert St. Denis & Liem Nguyen
 
 ## Design Choices ##
-Overall, our version of libuthread was implemented with robustness and code readability in mind. No .h files were added or modified to ensure high-quality coding practice was maintained. Our queue API uses a circular queue with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
-We
+Overall, our uthread library `libuthread.a` was implemented with code readability and program efficiency in mind. No header files were added or modified to ensure high-quality coding practice was maintained, and nearly every line has been neatly commented for ease of understanding. 
+
+Our queue API uses a circular queue for robustness with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
+
+Our key design choice in `uthread.c` was to use an array of global queues `ReadyQ, RunQ, WaitQ, DoneQ` rather than two individual queues and a pointer to the running thread. Not only did this result in higher frequency use of the `queue_` functions, but the exit logic of our `uthread_start()` loop can be performed in a single line:
+
+``` c
+while(queue_length(ReadyQ)) uthread_yield()
+``````
+
+`uthread.c` was also thoroughly checked for memory leaks, and all queues are deallocated and freed without error at the end of `uthread_start()`.
+
+`semaphore.c` is both straightforward and brief. The structure holds only a single `size_t` and a single queue of blocked threads.
+ 
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
