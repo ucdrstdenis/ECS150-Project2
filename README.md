@@ -4,7 +4,7 @@
 We approached each phase individually, from the beginning stages of phase 1, to the final stages of phase 4.
 
 ## Phase 1 - Creating new execution threads.
-We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures, then defined the functions queue_create, queue_destroy, queue_enqueue, queue_dequeue, queue_delete, queue_iterate, and queue_length.
+We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures, then defined the functions queue_create, queue_destroy, queue_enqueue, queue_dequeue, queue_delete, queue_iterate, and queue_length. Our implementations all had to be in O(1) constant time, so we chose to use if statements and while loops and NOT for loops.
 
 For queue_create, we first allocated memory space for a queue we locally initialize. If we failed to allocate proper memory space for our initialization, we would return NULL for the function call. If we succeded to allocate proper memory space for our initialization, then we set the queue head to NULL, tail to NULL, and length to 0. Then we return the initialized queue.
 
@@ -24,6 +24,17 @@ Lastly, we completed the makefile of our libuthread so we can successfully gener
 
 
 ## Phase 2 - Schedule the execution of threads in a round-robin fashion
+We needed to implement most of the thread management in this phase of the program, which was done by making modifications in uthread.c file. We predefined 4 global pointers to the 4 queues (ready, run, wait, done) to represent the states of a thread during its lifetime. We also defined the set of registers for each state in order to save the thread for descheduling and later scheduling. We also clearly defined the thread control block (TCB) of a typical thread, including in its structure: the thread's state, a pointer to the thread function, a user-level thread context (for context switching), a signal set (for phase 4), and two pointers, one to the thread function's argument and one to the top of the thread function's stack. Lastly, we defined the functions uthread_enqueue, uthread_yield, uthread_init, uthread_create, uthread_exit, uthread_block, uthread_unblock, uthread_current, and uthread_start.
+
+For uthread_enqueue, we pass a pointer to the thread control block (TCB) and the current state of the thread as parameters of the program. By setting the current state of the TCB to equal the state we passed in to the function, we could implement a switch statement to determine which thread state queue to place our TCB in.
+
+For uthread_yield, we declare TCB pointers (next, run, done), each of which represent the state of the thread we'll be dealing with in the function. We also save the signal state and disable interrupts (*Phase 4*). If we can't remove the next thread from the ready state queue, then we remove the running thread from the run state queue, change state, then add the running thread to the ready state queue and add the next thread to the running state queue. Then we must do a thread context switch for threads that are running and ready, by suspending execution of a currently running thread and resuming execution of another thread. This is needed whenever we deal with multiple threads. From here, while there are finished threads that exist on the done state queue, we destroy their respective stacks and free all of their thread contexts, signal sets, and memory space, simply because we don't need them anymore. Lastly, we restore the signal states and re-enable the interrupts (*Phase 4*). 
+
+
+
+
+If we don't successfully execute queue_dequeue of removing the TCB of the run state from the ready state queue, then we do the following: remove the thread (run TCB) from the running queue, then change state and add the removed thread (run TCB) to the ready state queue and TCB of the next state to the running queue, and switch thread context of the run and next TCB. This allows us to successfully transition from running to ready state, which is ultimately what yield is supposed to do. Then we test to see  
+
 
 
 
