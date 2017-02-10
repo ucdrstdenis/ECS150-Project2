@@ -3,12 +3,13 @@
 # General information
 We approached each phase individually, from the beginning stages of phase 1, to the final stages of phase 4.
 
-## Phase 1 - Creating new execution threads.
-We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures, then defined the functions queue_create, queue_destroy, queue_enqueue, queue_dequeue, queue_delete, queue_iterate, and queue_length. Our implementations all had to be in O(1) constant time, so we chose to use if statements and while loops and NOT for loops.
+## A "Brief" Explanation ##
+### Phase 1 - Creating new execution threads. ###
+We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures as typedefs, then defined the functions 'queue_create()', 'queue_destroy()', 'queue_enqueue()', 'queue_dequeue()', 'queue_delete()', 'queue_iterate()', and 'queue_length()'. All implementations excluding 'queue_iterate()' and 'queue_delete()' are all O(1).
 
-For queue_create, we first allocated memory space for a queue we locally initialize. If we failed to allocate proper memory space for our initialization, we would return NULL for the function call. If we succeded to allocate proper memory space for our initialization, then we set the queue head to NULL, tail to NULL, and length to 0. Then we return the initialized queue.
+For queue_create(), a queue is malloc'd and if malloc fails, a NULL pointer is returned from the function. Assuming malloc successeds the queue's head and tail are set to NULL, the length to zero, and the pointer is returned.
 
-For queue_destroy, we pass a queue structure as a parameter into our function. If the queue is NULL, we return a failure. If the head of the queue is not NULL, we return a failure. If the tail of the queue is not NULL, we return a failure. If the length of the queue is not NULL, we return a failure. Essentially we don't want to destroy a queue that is not empty. If none of these failures are reached, then we simply free the queue, and return a success.
+For 'queue_destroy()', a pointer to a queue is passed as an argument to the function. If the queue is NULL, we return a failure. If the head of the queue is not NULL, we also return a failure. If the tail of the queue is not NULL, again we return a failure. If the length of the queue is not NULL, we return a failure. Essentially we don't want to destroy a queue that is not empty. If none of these failures are reached, then we simply free the queue, and return a success.
 
 For queue_enqueue, we need to push a node onto the queue. We pass a queue structure and data pointer as parameters into our function. We first allocated memory space for a node we locally initialize. If we failed to allocate proper memory space for our initialization, we would return a failure. If the queue we passed in as a parameter was NULL, we would also return a failure. If a queue is not empty, but the head of the queue is NULL, we set the head of the queue to be our locally initialized node. If the head of the queue is not NULL, then we set the tail of the queue to be our locally initialized node, by simply pointing the current tail to the node. We make the final adjustments by initializing our node's data, attaching our node to the head of the queue, pointing the queue's tail to our node, and increasing the length of our queue. 
 
@@ -23,7 +24,7 @@ For queue_length, we simply pass a queue structure as the parameter into our fun
 Lastly, we completed the makefile of our libuthread so we can successfully generate a library archive, and we had to add other C files as we started implementing them from one phase to the next phase. We also built a test-queue.c that allows us to test our queue implementations in order.
 
 
-## Phase 2 - Schedule the execution of threads in a round-robin fashion
+### Phase 2 - Schedule the execution of threads in a round-robin fashion ###
 We needed to implement most of the thread management in this phase of the program, which was done by making modifications in uthread.c file. We predefined 4 global pointers to the 4 queues (ready, run, wait, done) to represent the states of a thread during its lifetime. We also defined the set of registers for each state in order to save the thread for descheduling and later scheduling. We also clearly defined the thread control block (TCB) of a typical thread, including in its structure: the thread's state, a pointer to the thread function, a user-level thread context (for context switching), a signal set (for phase 4), and two pointers, one to the thread function's argument and one to the top of the thread function's stack. Lastly, we defined the functions uthread_enqueue, uthread_yield, uthread_init, uthread_create, uthread_exit, uthread_block, uthread_unblock, uthread_current, and uthread_start.
 
 For uthread_enqueue, we pass a pointer to the thread control block (TCB) and the current state of the thread as parameters of the program. By setting the current state of the TCB to equal the state we passed in to the function, we could implement a switch statement to determine which thread state queue to place our TCB in.
@@ -47,7 +48,7 @@ For uthread_start, we pass a thread start function and the argument of that func
 Test 1 and 2 confirmed that our function definitions were implemented properly and effectively.
 
 
-## Phase 3 - Provide a thread synchronization API, namely semaphores
+### Phase 3 - Provide a thread synchronization API, namely semaphores ###
 In this phase we needed to implement semaphores, which would allow us(ers) to control access to the common resources by multiple threads. 
 
 First we needed to properly define a semaphore structure, which contains the "count", the number of threads able to share a common resource at the same time, and waiting state queue, queue of threads waiting to use that resource. We defined the functions sem_create, sem_destroy, sem_down, and sem_up.
@@ -63,7 +64,7 @@ For sem_up, threads can release a resource, so we passed a semaphore structure a
 Test 3, 4, and 5 confirmed that our function definitions were implemented properly and effectively.
 
 
-## Phase 4 - Be preemptive, that is to provide an interrupt-based scheduler
+### Phase 4 - Be preemptive, that is to provide an interrupt-based scheduler ###
 In this final phase we needed to add a preemption to our user-thread library, by making modifications primarily in preempt.c, but also in other .c files under the libuthread sub-directory. We first needed to predefine the structure for the timer disabler. The functions we defined in preempt.c are preempt_save, preempt_restore, preempt_enable, preempt_disable, preempt_disabled, and timer_handler.
 
 For preempt_save, we pass the "level" signal set as the parameter of the function. We first call sigprocmask(), which allows us mask the interrupt and block the signal call. Then we get the remaining time on the clock by calling getitimer(). We set the amount of time we have left to 0x2000000 and save the time left inside the current signal set we passed in as a parameter. Then we disable the timer, which successfully completes our call to preempt_save to save the time left inside the current signal set "level". 
