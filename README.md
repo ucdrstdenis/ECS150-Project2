@@ -8,22 +8,30 @@ Overall, our uthread library `libuthread.a` was implemented with code readabilit
 
 Our queue API uses a circular queue for robustness with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
 
-Our key design choice in `uthread.c` was to use an array of global queues `ReadyQ, RunQ, WaitQ, DoneQ` rather than two individual queues and a pointer to the running thread. Not only did this result in higher frequency use of the `queue_` functions, but the exit logic of our `uthread_start()` loop can be performed in a single line:
+Our key design choice in `uthread.c` was to use an array of global queues rather than two individual queues and a pointer to the running thread. Not only did this result in higher frequency use of the `queue_` functions, but the exit logic of our `uthread_start()` loop can be implemented in a single line:
 
 ``` c
 while(queue_length(ReadyQ)) 	uthread_yield();
 ``````
-
+All threads also maintain a `uthread_state_t` typdef'd as an enum with 4 unique states. The utrhead_tcb structure is shown below.
+``` c
+struct uthread_tcb {
+    uthread_state_t state;                              /* Holds the thread's state                 */
+    uthread_func_t func;                                /* Pointer to thread function               */
+    uthread_ctx_t *uctx;                                /* User level thread context                */
+    sigset_t *sigset;                                   /* Save preemption masks & time remaining   */
+    void *arg;                                          /* Pointer to thread function arg           */
+    void *stack;                                        /* Pointer to the top of the stack          */
+}
+``````
 `uthread.c` was also thoroughly checked for memory leaks using tests 1-5, and all queues are deallocated and freed without error at the end of `uthread_start()`.
 
-All threads also maintain a `uthread_state_t` typdef'd as an enum with 4 unique states. 
+`semaphore.c` is both straightforward and brief. The semaphore structure holds only a single `size_t` and a `queue_t` of blocked threads.
 
-`semaphore.c` is both straightforward and brief. The structure holds only a single `size_t` and a `queue_t` of blocked threads.
-
-`preempt.c` is brief, but contains some very specific design choices. Our idea behind preempt_save() and preempt_restore When the `SIGVTALRM` signal is masked.
+`preempt.c` is brief, but contains some very specific design choices. Our idea behind preempt_save() and preempt_restore() was to ensure that the current timer value, in addition to the thread's current signal masking would be saved. Because the header files were not modified, preempt.c has no formal definition of the uthread_tcb structure, it simply knows there is a structure. we use bitwise operations to store and extract When the `SIGVTALRM` signal is masked.
 
 ## Additional Files ##
-`rmake.sh` - A remote compile script for compiling on CSIF when working remotely. Uses 'rsync' and 'ssh' to sync a folder and remotely compile on the CSIF machines
+`rmake.sh` - A remote compile script for compiling on CSIF. Uses 'rsync' and 'ssh' to sync the project folder and remotely compile on the CSIF machines.
 
 `ExampleFiles` - Directory containing instructor provided files and the assignment.
 
