@@ -4,6 +4,7 @@
 Robert St. Denis & Liem Nguyen
 
 ## Design Choices ##
+Overall our uthread library was implemented 
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
@@ -13,7 +14,7 @@ For `queue_create()`, a queue is malloc'd and if malloc fails, a NULL pointer is
 
 For `queue_destroy()`, a pointer to a queue is passed as an argument to the function which first proceeds to check for potential failures. The following situations result in failure: The queue passed is NULL, the head of the queue passed is not NULL, the tail of the queue is not NULL, and the length of the queue is not NULL. The purpose of the checks is to avoid destroying a queue that has not been properly cleared first. If none of these failures are reached, then we simply free the queue from memory, and return success.
 
-For `queue_enqueue()`, a node is malloced and added to the queue, which is passed as a pointer to the function along with a void * pointer to the data to enqueue. If the queue pointer passed is NULL, or the  malloc'd node is NULL, we would return a failure. If a queue is not empty, but the head of the queue is NULL, we set the head of the queue to be our locally initialized node. If the head of the queue is not NULL, then we set the tail of the queue to be our locally initialized node, by simply pointing the current tail to the node. We make the final adjustments by initializing our node's data, attaching our node to the head of the queue, pointing the queue's tail to our node, and increasing the length of our queue. 
+For `queue_enqueue()`, a node is malloced and added to the queue, which is passed as a pointer to the function along with a void * pointer to the data to enqueue. If the queue pointer passed is NULL, or the malloc returns a NULL pointer for the node, the function returns a failure. If a queue is not empty, but the head of the queue is NULL, we set the head of the queue to be our locally initialized node. If the head of the queue is not NULL, then we set the tail of the queue to be our locally initialized node, by simply pointing the current tail to the node. We make the final adjustments by initializing our node's data, attaching our node to the head of the queue, pointing the queue's tail to our node, and increasing the length of our queue. 
 
 For `queue_dequeue()` removes a node from the queue. A pointer to queue structure is passed along with void double pointer to the data parameters into our function. If the queue is NULL, queue's head is NULL, or the queue's tail is NULL, we return a failure. If not, then we set the value of the double pointer to be the data of the queue's head, by deferencing. Then, if we fail to remove the node from the queue by the queue_delete() function call, then we return a failure. If we succeed to remove the node from the queue, then we return a success.
 
@@ -86,12 +87,12 @@ If the outputs for test 1-5 are the same while running preempt.c with our modifi
 ## Building / Running ##
 This program was compiled using the Linux gcc 6.3.1 compiler.
 
-To build, cd to the folder in a terminal.
+To build, clone this repository and then cd to the folder in a terminal.
 
 Then type `make` and let `Makefile` and `libuthread/Makefile` do the rest.
 
-After building, the tests 1 through 5 can be run by typing `./testX`
-where `X` represents the test number.
+After building, tests 1 through 5 can be run by typing `./testX`
+where X represents the test number.
 
 # References #
 1. Operating Systems Principles and Practice (Chapter 4).
