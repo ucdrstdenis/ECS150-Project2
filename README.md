@@ -38,6 +38,8 @@ Masking is performed via the `sigprocmask()` function. When `preempt_save()` is 
 
 `ExampleFiles` - Directory containing instructor provided files and the assignment.
 
+`REPORT.md` - A copy of this README.md file
+
 ## A Highly Detailed Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
 We first implemented a FIFO queue, by making modifications in `queue.c`. We defined the node and queue structures as typedefs, then defined the functions `queue_create()`, `queue_destroy()`, `queue_enqueue()`, `queue_dequeue()`, `queue_delete()`, `queue_iterate()`, and `queue_length()`. All implementations excluding `queue_iterate()` and `queue_delete()` are *O(1)*.
@@ -63,9 +65,9 @@ We needed to implement most of the thread management in this phase of the progra
 
 The custom function `uthread_enqueue()` was defined for convenience of coding. Instead of just updating the state we pass a pointer to the thread control block (TCB) and the current state of the thread as parameters of the program. By setting the current state of the TCB to equal the state we passed in to the function, we could implement a switch statement to determine which queue to place our thread in.
 
-For `uthread_yield()`, we declare TCB pointers (next, run, done), each of which represent the state of the thread we'll be dealing with in the function. The first function call is to `preempt_save()` to save the signal state and disable interrupts. If we can't remove the next thread from the ready state queue, then we remove the running thread from the run state queue, change state, then add the running thread to the ready state queue and add the next thread to the running state queue. Then we must do a thread context switch for threads that are running and ready, by suspending execution of a currently running thread and resuming execution of another thread. This is needed whenever we deal with multiple threads. From here, while there are finished threads that exist on the done state queue, we destroy their respective stacks and free all of their thread contexts, signal set object, and memory space, simply because we don't need them anymore. Lastly, we call `preempt_restore()` to restore the signal state and reenable interrupts.
-
 `uthread_init()` is a custom function for ease of re-use. Both `uthread_create()` and `uthread_start()` make use of it. We pass a thread function and argument of that function as parameters to the function. We must allocate the right amount of memory for the TCB, as well as allocate thread context and signal set object. Then we assign the TCB's function pointer and argument pointer to the parameters we passed in, and set the TCB's current state to ready.
+
+For `uthread_yield()`, we declare TCB pointers (next, run, done), each of which represent the state of the thread we'll be dealing with in the function. The first function call is to `preempt_save()` to save the signal state and disable interrupts. If we can't remove the next thread from the ready state queue, then we remove the running thread from the run state queue, change state, then add the running thread to the ready state queue and add the next thread to the running state queue. Then we must do a thread context switch for threads that are running and ready, by suspending execution of a currently running thread and resuming execution of another thread. This is needed whenever we deal with multiple threads. From here, while there are finished threads that exist on the done state queue, we destroy their respective stacks and free all of their thread contexts, signal set object, and memory space, simply because we don't need them anymore. Lastly, we call `preempt_restore()` to restore the signal state and reenable interrupts.
 
 For `uthread_create()`, we make a function call to `uthread_init()` defined earlier to initialize the thread we intend to create. That comes with allocating memory for a stack and pointer to the top of the stack. Once we create our thread, we add it to the ready state queue.
 
