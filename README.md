@@ -29,7 +29,7 @@ struct uthread_tcb {
 
 `semaphore.c` is both straightforward and brief. The semaphore structure holds only a single `size_t` and a `queue_t` of blocked threads.
 
-`preempt.c` is brief, but contains some very specific design choices. Our idea behind `preempt_save(`) and `preempt_restore()` was not only to ensure that the current thread's signals would be saved, but also that the current value of the timer would be saved. Since the save and restore functions only have access to a single sigset_t pointer, we used bitwise operations to store and extact the current timer value within the mask. This only works however, under the circumstances that `SIGVTALRM` is the only signal of interest, and that the timer value is not set much larger than the required 10000 microseconds (Or else it could potentially conflict with the mask value of `0x2000000`);
+`preempt.c` is brief, but contains some very specific design choices. Our idea behind `preempt_save()` and `preempt_restore()` was not only to ensure that the current thread's signal state would be saved, but also that the current value of the timer would be saved. Since the save and restore functions only have access to a single sigset_t pointer, we used bitwise operations to store and extact the current timer value within the mask. This only works however, under the circumstances that `SIGVTALRM` is the only signal of interest, and that the timer value is not set much larger than the required 10000 microseconds (Or else it could potentially conflict with the mask value of `0x2000000`);
 
 Masking is performed via the `sigprocmask()` function. When `preempt_save()` is called, the interrupt is masked to prevent the critical section from being interrupted. The mask value and current timer value are stored in the thread's `sigset_t->__val[0]`. Finally, `preempt_save()` calls `preempt_disable()` which uses the `setitimer()` function to fully disable the timer. The interrupt is not unmasked until after the timer has been re-enabled with the restored value extracted in `preempt_restore()`. (If `preempt_enable()` is called directly, the restored value is simply the full value of 10,000 microseconds).
 
@@ -73,34 +73,34 @@ For `uthread_exit()`, we declare TCB pointers (me, next), each of which represen
 
 For `uthread_block()`, we declare TCB pointers (next, run), each of which represent the state of the thread we'll be dealing with in the function. The first function call is to `preempt_save()` to save the signal state and disable interrupts, since it's a critical section. We perform similar actions in this function as we do in `uthread_exit()`. We remove the running thread from the run state queue and remove the next queue from the ready state queue. Then we change state and add the running and next threads from the WAITING state queue and running state queue, respectively. We add the running thread to the waiting state queue so that the thread can next transition to the running state queue. Then we make the necessary thread context switch.  Lastly, we call `preempt_restore()` to restore the signal state and reenable interrupts.
 
-For uthread_unblock, we pass a thread as a parameter to the function. We also save the signal state and disable interrupts. We remove the blocked thread from the waiting state queue by calling queue_delete(), and then add that same thread onto the ready state queue. We then restore the signal state and re-enable the interrupts.
+For `uthread_unblock()`, we pass a thread as a parameter to the function. The first function call is to `preempt_save()` to save the signal state and disable interrupts, since it's a critical section. We remove the blocked thread from the waiting state queue by calling `queue_delete()`, and then add that same thread onto the ready state queue. We then call `preempt_restore()` to restore the signal state and reenable interrupts.
 
-For uthread_current, we initialize a local thread structure (current). This function allows us to take hold of the current thread we are dealing with, and we call this function so that it returns us the current thread.
+For `uthread_current()`, we initialize a local thread structure (current). We then dequeue the currently running thread to update the current pointer, and then re-enqueue the running thread. This strategy only works if it is guaranteed that only one thread is in the running queue at a time.
 
-For uthread_start, we pass a thread start function and the argument of that function as parameters to the function. We must iterate through each of the 4 thread states (ready, run, wait, done), in order to see where to initialize our thread. Once we set the state of our thread and add it to the running state queue, we start the timer (*Phase 4*) and create the thread that we must add to the next queue, the ready state queue.  If a thread already exists, we can simply switch to the next thread by calling uthread_yield(). Lastly, we must conduct memory cleanup in order to assure no memory leak once we no longer need a thread.
+For `uthread_start()`, we pass a thread start function and the argument of that function as parameters to the function. We must iterate through each of the 4 thread states (ready, run, wait, done), in order to see where to initialize our thread. Once we set the state of our thread and add it to the running state queue, we start the timer (*Phase 4*) and create the thread that we must add to the next queue, the ready state queue.  If a thread already exists, we can simply switch to the next thread by calling uthread_yield(). Lastly, we must conduct memory cleanup in order to assure no memory leak once we no longer need a thread.
 
 Test 1 and 2 confirmed that our function definitions were implemented properly and effectively.
 
 
 ### Phase 3 - Provide a thread synchronization API, namely semaphores ###
-In this phase we needed to implement semaphores, which would allow us(ers) to control access to the common resources by multiple threads. 
+In this phase we needed to implement semaphores, which would allow the user(s) to control access to the common resources of multiple threads. 
 
-First we needed to properly define a semaphore structure, which contains the "count", the number of threads able to share a common resource at the same time, and waiting state queue, queue of threads waiting to use that resource. We defined the functions sem_create, sem_destroy, sem_down, and sem_up.
+First we needed to properly define a semaphore structure, which contains the `size_t` "count", the number of threads able to share a common resource at the same time, and waiting queue of threads waiting to use that resource. We defined the functions `sem_create()`, `sem_destroy()`, `sem_down()`, and `sem_up()`.
 
-For sem_create, we passed the count as the parameter of the function. We must first allocate memory for our semaphore structure, and then create the waiting state queue of waiting threads, and initializing the count of the semaphore we just created.
+For `sem_create()`, we passed the count as the parameter of the function. We must first allocate memory for our semaphore structure, and then create the waiting state queue of waiting threads, and initializing the count of the semaphore we just created.
 
-For sem_destroy, we passed the semaphore structure as the parameter of the function. If we fail to destory the waiting state queue associated with the semaphore, we return a failure. If we succeed to destroy the waiting state queue, then we free its memory and return a success.
+For `sem_destroy()`, we passed the semaphore structure as the parameter of the function. If we fail to destory the waiting state queue associated with the semaphore, we return a failure. If we succeed to destroy the waiting state queue, then we free its memory and return a success.
 
-For sem_down, threads can ask to grab a resource, so we passed a semaphore structure as the parameter of the function. If the thread tries to grab a resource when the count is down to 0, it adds that thread to the list of threads in the waiting state queue. The thread is put in a blocked state and isn't eligible to scheduling.
+For `sem_down()`, threads can ask to grab a resource, so we passed a semaphore structure as the parameter of the function. If the thread tries to grab a resource when the count is down to 0, it adds that thread to the list of threads in the waiting state queue. The thread is also put into a blocked state with `uthread_block()` and the context is switched to the next ready thread.
 
-For sem_up, threads can release a resource, so we passed a semaphore structure as the parameter of the function. If the thread releases a semaphore which count is 0, it needs to check whether threads exist on the waiting state queue. If so, the first thread of the waiting state queue can be unblocked and ran.
+For `sem_up()`, threads can release a resource, so we passed a semaphore structure as the parameter of the function. If the thread releases a semaphore which count is 0, it needs to check whether threads exist on the waiting state queue. If so, the first thread of the waiting state queue can be unblocked with `uthread_unblock()` and placed into the ready queue for running.
 
 Test 3, 4, and 5 confirmed that our function definitions were implemented properly and effectively.
 
 
 ### Phase 4 - Be preemptive, that is to provide an interrupt-based scheduler ###
 
-See the *Design Choices* section.
+See the above *Design Choices* section.
 
 ## Building / Running ##
 This program was compiled using the Linux gcc 6.3.1 compiler.
