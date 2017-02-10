@@ -3,8 +3,8 @@
 # General information
 We approached each phase individually, from the beginning stages of phase 1, to the final stages of phase 4.
 
-## A "Brief" Overview of Libuthread.a ##
-### Phase 1 - Creating new execution threads. ###
+## A "Brief" Overview of libuthread.a ##
+### Phase 1 - FIFO Queues ###
 We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures as typedefs, then defined the functions `queue_create()`, `queue_destroy()`, `queue_enqueue()`, `queue_dequeue()`, `queue_delete()`, `queue_iterate()`, and `queue_length()`. All implementations excluding `queue_iterate()` and `queue_delete()` are O(1).
 
 For `queue_create()`, a queue is malloc'd and if malloc fails, a NULL pointer is returned from the function. If malloc successeds the queue's head and tail are set to NULL, the length to zero, and the pointer is returned.
