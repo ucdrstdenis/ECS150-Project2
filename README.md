@@ -78,6 +78,6 @@ For preempt_disabled, we simply check if the preemption is currently disabled.
 
 For timer_handler, we can force the currently running thread to yield in order for another thread to be scheduled instead by calling uthread_yield().
 
-
+If the outputs for test 1-5 are the same while running preempt.c with our modifications, then we know our function implementations were successful, which they were.
 
 
