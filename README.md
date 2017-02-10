@@ -29,7 +29,7 @@ struct uthread_tcb {
 
 `semaphore.c` is both straightforward and brief. The semaphore structure holds only a single `size_t` and a `queue_t` of blocked threads.
 
-`preempt.c` is brief, but contains some very specific design choices. Our idea behind preempt_save() and preempt_restore() was not only to ensure that the current thread's signal would be saved, but also that the current value of the timer would be saved. Since the save and restore functions only have access to a single sigset_t pointer, we used bitwise operations to store and extact the current timer value within the mask. This only works however, under the circumstances that `SIGVTALRM` is the only signal of interest, and that the timer value is not set much larger than the required 10000 microseconds (Or else it could potentially conflict with the mask value of `0x2000000`);
+`preempt.c` is brief, but contains some very specific design choices. Our idea behind preempt_save() and preempt_restore() was not only to ensure that the current thread's signals would be saved, but also that the current value of the timer would be saved. Since the save and restore functions only have access to a single sigset_t pointer, we used bitwise operations to store and extact the current timer value within the mask. This only works however, under the circumstances that `SIGVTALRM` is the only signal of interest, and that the timer value is not set much larger than the required 10000 microseconds (Or else it could potentially conflict with the mask value of `0x2000000`);
 
 Masking is performed via the `sigprocmask()` function. When `preempt_save()` is called, the interrupt is masked to prevent the critical section from being interrupted. The mask value and current timer value are stored in the thread's `sigset_t->__val[0]`. Finally, `preempt_save()` calls `preempt_disable()` which uses the `setitimer()` function to fully disable the timer. The interrupt is not unmasked until after the timer has been re-enabled with the restored value extracted in `preempt_restore()`. (If `preempt_enable()` is called directly, the restored value is simply the full value of 10,000 microseconds).
 
@@ -38,7 +38,7 @@ Masking is performed via the `sigprocmask()` function. When `preempt_save()` is 
 
 `ExampleFiles` - Directory containing instructor provided files and the assignment.
 
-## A "Brief" Overview of libuthread.a ##
+## A Highly Detailed Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
 We first implemented a FIFO queue, by making modifications in queue.c. We defined the node and queue structures as typedefs, then defined the functions `queue_create()`, `queue_destroy()`, `queue_enqueue()`, `queue_dequeue()`, `queue_delete()`, `queue_iterate()`, and `queue_length()`. All implementations excluding `queue_iterate()` and `queue_delete()` are *O(1)*.
 
@@ -54,7 +54,7 @@ For `queue_delete()`, a pointer to a queue structure and pointer to data are pas
 
 For `queue_iterate()`, we pass a queue structure and queue function as parameters into our function. We first initialized two node pointers, a current node we intend to use, and a temporary node we'll also need. If the function or queue is NULL, then we return a failure, because there's nothing to iterate over. If the queue's head is NULL, there is also nothing to iterate, but we return a success since there exists a queue. We set our initialized current node to equal the queue's head, so we can start to iterate over the queue. As we iterate through the queue, we set the temporary node as the next node after the current node. Then we call the function "func" for the current node in the queue. If the function call was successful, we can continue to iterate through the queue. Once we reach the queue's tail, we perform one last function call to the node. The queue_iterate function essentially allows us to execute function "func" calls against every node or element in the queue.
 
-For queue_length, we simply pass a pointer to the queue structure as the parameter into our function, in order to return the length of our queue. If the queue's head is NULL, we can determine that the length of the queue is 0. Otherwise we simply return `queue->length`.
+For `queue_length()`, we simply pass a pointer to the queue structure as the parameter into our function, in order to return the length of our queue. If the queue's head is NULL, we can determine that the length of the queue is 0. Otherwise we simply return `queue->length`.
 
 Finally, we completed the Makefile of our libuthread to successfully generate a library archive (.a) file, and we had to add other C files as we started implementing them from one phase to the next phase. We also built a test-queue.c that allows us to test our queue implementations in order.
 
