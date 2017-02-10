@@ -38,6 +38,8 @@ void preempt_save(sigset_t *level)
     long int timeLeft;
 
     sigprocmask(SIG_BLOCK, &alarmMask, level);          /* Mask the interrupt                        */
+    sigpending(level);                                  /* Get the pending signals                  */
+    level->__val[0] &= MAGIC_NUMBER;                    /* Don't care about the rest of the signals */
     getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock       */
 
     /*
@@ -48,17 +50,13 @@ void preempt_save(sigset_t *level)
      * this could go very very wrong.
      */
 
-    timeLeft = (MAGIC_NUMBER | it.it_value.tv_usec);    /* Bitwise OR with the magic number         */
+    timeLeft = (level->__val[0] | it.it_value.tv_usec); /* Bitwise OR with the magic number         */
     level->__val[0] =timeLeft;                          /* Save time left inside current sigset_t   */
 
     /*
      * Could also skip the OR and just store it
      * inside  __val[1-15]. Not as much fun...
      */
-
-    
-    sigpending(level);                                  /* Get the pending signals                  */
-    level->__val[0] &= MAGIC_NUMBER;			/* Don't care about the rest of the signals */
     preempt_disable();                                  /* Disable the timer                        */
 }
 /* **************************************************** */
