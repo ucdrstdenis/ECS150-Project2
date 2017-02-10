@@ -14,7 +14,7 @@ libuthread.a
 # Eclipse files
 *.cproject
 *.project
-
+*.settings
 # Dumped cores
 core
 
