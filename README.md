@@ -20,11 +20,11 @@ All threads also maintain a `uthread_state_t` typdef'd as an enum with 4 unique 
 
 `semaphore.c` is both straightforward and brief. The structure holds only a single `size_t` and a `queue_t` of blocked threads.
 
-`preempt.c` is brief, but contains some very specific design choices. When the `SIGVTALRM` signal is masked.
+`preempt.c` is brief, but contains some very specific design choices. Our idea behind preempt_save() and preempt_restore When the `SIGVTALRM` signal is masked.
 
 ## Additional Files ##
-
- 
+`rmake.sh` - A remote compile script for compiling on CSIF when working remotely. Uses 'rsync' and 'ssh' to sync a folder and remotely compile
+`ExampleFiles` - Directory containing instructor provided files.  
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
