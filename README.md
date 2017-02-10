@@ -48,7 +48,19 @@ Test 1 and 2 confirmed that our function definitions were implemented properly a
 
 
 ## Phase 3 - Provide a thread synchronization API, namely semaphores
+In this phase we needed to implement semaphores, which would allow us(ers) to control access to the common resources by multiple threads. 
 
+First we needed to properly define a semaphore structure, which contains the "count", the number of threads able to share a common resource at the same time, and waiting state queue, queue of threads waiting to use that resource. We defined the functions sem_create, sem_destroy, sem_down, and sem_up.
+
+For sem_create, we passed the count as the parameter of the function. We must first allocate memory for our semaphore structure, and then create the waiting state queue of waiting threads, and initializing the count of the semaphore we just created.
+
+For sem_destroy, we passed the semaphore structure as the parameter of the function. If we fail to destory the waiting state queue associated with the semaphore, we return a failure. If we succeed to destroy the waiting state queue, then we free its memory and return a success.
+
+For sem_down, threads can ask to grab a resource, so we passed a semaphore structure as the parameter of the function. If the thread tries to grab a resource when the count is down to 0, it adds that thread to the list of threads in the waiting state queue. The thread is put in a blocked state and isn't eligible to scheduling.
+
+For sem_up, threads can release a resource, so we passed a semaphore structure as the parameter of the function. If the thread releases a semaphore which count is 0, it needs to check whether threads exist on the waiting state queue. If so, the first thread of the waiting state queue can be unblocked and ran.
+
+Test 3, 4, and 5 confirmed that our function definitions were implemented properly and effectively.
 
 
 ## Phase 4 - Be preemptive, that is to provide an interrupt-based scheduler
