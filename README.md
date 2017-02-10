@@ -1,15 +1,21 @@
 % ECS 150: Project #2 - User-level thread library
 
-# Contributors #
+## Contributors ##
 Robert St. Denis & Liem Nguyen
 
 also by:
 
 Liem Nguyen & Robert St. Denis
 
-# Compiling / Running #
+## Building / Running ##
+This program was compiled using the Linux gcc 6.3.1 compiler.
 
-# Design Choices #
+To build, cd to the folder in a terminal.
+
+Then type `make` and let `Makefile` and `libuthread/Makefile` do the rest.
+
+After building, the shell can be run by typing `./sshell`
+## Design Choices ##
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - FIFO Queues ###
