@@ -56,6 +56,9 @@ void preempt_save(sigset_t *level)
      * inside  __val[1-15]. Not as much fun...
      */
 
+    
+    sigpending(level);                                  /* Get the pending signals                  */
+    level->__val[0] &= MAGIC_NUMBER;			/* Don't care about the rest of the signals */
     preempt_disable();                                  /* Disable the timer                        */
 }
 /* **************************************************** */
