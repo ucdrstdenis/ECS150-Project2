@@ -4,7 +4,7 @@
 Robert St. Denis & Liem Nguyen
 
 ## Design Choices ##
-Overall our uthread library was implemented 
+Overall, our version of libuthread was implemented with robustness and code readability in mind. No .h files were modified or added to ensure good coding practice, and Our queue API uses a circular queue with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
@@ -89,7 +89,7 @@ This program was compiled using the Linux gcc 6.3.1 compiler.
 
 To build, clone this repository and then cd to the folder in a terminal.
 
-Then type `make` and let `Makefile` and `libuthread/Makefile` do the rest.
+Then type `make` and let the `Makefile` and `libuthread/Makefile` do the rest.
 
 After building, tests 1 through 5 can be run by typing `./testX`
 where X represents the test number.
