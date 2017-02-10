@@ -64,6 +64,20 @@ Test 3, 4, and 5 confirmed that our function definitions were implemented proper
 
 
 ## Phase 4 - Be preemptive, that is to provide an interrupt-based scheduler
+In this final phase we needed to add a preemption to our user-thread library, by making modifications primarily in preempt.c, but also in other .c files under the libuthread sub-directory. We first needed to predefine the structure for the timer disabler. The functions we defined in preempt.c are preempt_save, preempt_restore, preempt_enable, preempt_disable, preempt_disabled, and timer_handler.
+
+For preempt_save, we pass the "level" signal set as the parameter of the function. We first call sigprocmask(), which allows us mask the interrupt and block the signal call. Then we get the remaining time on the clock by calling getitimer(). We set the amount of time we have left to 0x2000000 and save the time left inside the current signal set we passed in as a parameter. Then we disable the timer, which successfully completes our call to preempt_save to save the time left inside the current signal set "level". 
+
+For preempt_restore, we pass the "level" signal set as the parameter of the function. We essentially need to restore the amount of time that is left after extraction, by enabling preemption to pause the ongoing storage of remaining time. Once we enable, we can un-mask the interrupt and restore the time left inside the current signal set "level".
+
+For preempt_enable, if we succesfully enable the timer value of restoreTimer and restore the time if it has been saved, then the function call has done its job.
+
+For preempt_disable, if we successfully disable the timer value of disableTimer, then the function call has done its job.
+
+For preempt_disabled, we simply check if the preemption is currently disabled.
+
+For timer_handler, we can force the currently running thread to yield in order for another thread to be scheduled instead by calling uthread_yield().
+
 
 
 
