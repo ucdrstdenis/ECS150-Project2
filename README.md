@@ -23,8 +23,9 @@ All threads also maintain a `uthread_state_t` typdef'd as an enum with 4 unique 
 `preempt.c` is brief, but contains some very specific design choices. Our idea behind preempt_save() and preempt_restore When the `SIGVTALRM` signal is masked.
 
 ## Additional Files ##
-`rmake.sh` - A remote compile script for compiling on CSIF when working remotely. Uses 'rsync' and 'ssh' to sync a folder and remotely compile
-`ExampleFiles` - Directory containing instructor provided files.  
+`rmake.sh` - A remote compile script for compiling on CSIF when working remotely. Uses 'rsync' and 'ssh' to sync a folder and remotely compile on the CSIF machines
+
+`ExampleFiles` - Directory containing instructor provided files and the assignment.
 
 ## A "Brief" Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
