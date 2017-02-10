@@ -28,17 +28,29 @@ We needed to implement most of the thread management in this phase of the progra
 
 For uthread_enqueue, we pass a pointer to the thread control block (TCB) and the current state of the thread as parameters of the program. By setting the current state of the TCB to equal the state we passed in to the function, we could implement a switch statement to determine which thread state queue to place our TCB in.
 
-For uthread_yield, we declare TCB pointers (next, run, done), each of which represent the state of the thread we'll be dealing with in the function. We also save the signal state and disable interrupts (*Phase 4*). If we can't remove the next thread from the ready state queue, then we remove the running thread from the run state queue, change state, then add the running thread to the ready state queue and add the next thread to the running state queue. Then we must do a thread context switch for threads that are running and ready, by suspending execution of a currently running thread and resuming execution of another thread. This is needed whenever we deal with multiple threads. From here, while there are finished threads that exist on the done state queue, we destroy their respective stacks and free all of their thread contexts, signal sets, and memory space, simply because we don't need them anymore. Lastly, we restore the signal states and re-enable the interrupts (*Phase 4*). 
+For uthread_yield, we declare TCB pointers (next, run, done), each of which represent the state of the thread we'll be dealing with in the function. We also save the signal state and disable interrupts. If we can't remove the next thread from the ready state queue, then we remove the running thread from the run state queue, change state, then add the running thread to the ready state queue and add the next thread to the running state queue. Then we must do a thread context switch for threads that are running and ready, by suspending execution of a currently running thread and resuming execution of another thread. This is needed whenever we deal with multiple threads. From here, while there are finished threads that exist on the done state queue, we destroy their respective stacks and free all of their thread contexts, signal set object, and memory space, simply because we don't need them anymore.
 
+For uthread_init, we pass a thread function and argument of that function as parameters to the function. We must allocate the right amount of memory for the TCB, as well as allocate thread context and signal set object. Then we assign the TCB's function pointer and argument pointer to the parameters we passed in, and set the TCB's current state to ready.
 
+For uthread_create, we make a function call to uthread_init defined earlier to initialize the thread we intend to create. That comes with allocating memory for a stack and pointer to the top of the stack. Once we create our thread, we add it to the ready state queue.
 
+For uthread_exit, we declare TCB pointers (me, next), each of which represent the state of the thread we'll be dealing with in the function. We also save the signal state and disable interrupts. We remove the running thread from the run state queue and remove the next thread from the ready state queue. Then we can change state and add the running and next threads to the done state queue and running state queue, respectively. Then we make the necessary thread context switch. There is no need to restore signal state and re-enable interrupts since we're exiting the thread life cycle.
 
-If we don't successfully execute queue_dequeue of removing the TCB of the run state from the ready state queue, then we do the following: remove the thread (run TCB) from the running queue, then change state and add the removed thread (run TCB) to the ready state queue and TCB of the next state to the running queue, and switch thread context of the run and next TCB. This allows us to successfully transition from running to ready state, which is ultimately what yield is supposed to do. Then we test to see  
+For uthread_block, we declare TCB pointers (next, run), each of which represent the state of the thread we'll be dealing with in the function. We also save the signal state and disable interrupts. We perform similar actions in this function as we do in uthread_exit. We remove the running thread from the run state queue and remove the next queue from the ready state queue. Then we change state and add the running and next threads from the WAITING state queue and running state queue, respectively. We add the running thread to the waiting state queue so that the thread can next transition to the running state queue. Then we make the necessary thread context switch. Lastly, we restore the signal state and re-enable the interrupts.
 
+For uthread_unblock, we pass a thread as a parameter to the function. We also save the signal state and disable interrupts. We remove the blocked thread from the waiting state queue by calling queue_delete(), and then add that same thread onto the ready state queue. We then restore the signal state and re-enable the interrupts.
 
+For uthread_current, we initialize a local thread structure (current). This function allows us to take hold of the current thread we are dealing with, and we call this function so that it returns us the current thread.
+
+For uthread_start, we pass a thread start function and the argument of that function as parameters to the function. We must iterate through each of the 4 thread states (ready, run, wait, done), in order to see where to initialize our thread. Once we set the state of our thread and add it to the running state queue, we start the timer (*Phase 4*) and create the thread that we must add to the next queue, the ready state queue.  If a thread already exists, we can simply switch to the next thread by calling uthread_yield(). Lastly, we must conduct memory cleanup in order to assure no memory leak once we no longer need a thread.
+
+Test 1 and 2 confirmed that our function definitions were implemented properly and effectively.
 
 
 ## Phase 3 - Provide a thread synchronization API, namely semaphores
+
+
+
 ## Phase 4 - Be preemptive, that is to provide an interrupt-based scheduler
 
 
