@@ -83,6 +83,7 @@ void preempt_enable(void)
          perror("setitimer");
          exit(1);
     }
+    restoreTimer.it_value.tv_usec = uSEC;               /* Protection, in case called directly      */
 }
 /* **************************************************** */
 /* **************************************************** */
