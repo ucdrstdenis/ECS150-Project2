@@ -68,7 +68,6 @@ void preempt_restore(sigset_t *level)
     level->__val[0] &= MAGIC_NUMBER;                   /* Stop storing the remaining time           */
 
     preempt_enable();                                  /* Enable preemption, pick up with timeLeft  */
-    sigprocmask(SIG_UNBLOCK, &alarmMask, NULL);        /* Un-mask the interrupt                     */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -81,6 +80,7 @@ void preempt_enable(void)
          exit(1);
     }
     restoreTimer.it_value.tv_usec = uSEC;               /* Protection, in case called directly      */
+    sigprocmask(SIG_UNBLOCK, &alarmMask, NULL);         /* De-Mask the interrupt if called directly */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -88,6 +88,7 @@ void preempt_enable(void)
 /* **************************************************** */
 void preempt_disable(void)
 {
+    sigprocmask(SIG_BLOCK, &alarmMask, NULL);           /* Mask the interrupt in case direct call   */
     if (setitimer(IT_VIRT, &disableTimer, NULL)) {      /* Disable the timer                        */
         perror("setitimer");
         exit(1);
