@@ -103,6 +103,8 @@ bool preempt_disabled(void)
     struct itimerval it;
     getitimer(ITIMER_VIRTUAL, &it);                     /* Get the current timer values             */
     return (bool) (it.it_interval.tv_usec > 0);         /* Return the boolean                       */
+    /* Could also have checked current mask value */
+    /* Not sure which way the instructor prefers  */
 }
 /* **************************************************** */
 /* **************************************************** */
