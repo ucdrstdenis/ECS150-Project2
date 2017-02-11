@@ -35,11 +35,7 @@ static struct itimerval restoreTimer;                   /* Initialized in preemp
 void preempt_save(sigset_t *level)
 {
     struct itimerval it;
-
     sigprocmask(SIG_BLOCK, &alarmMask, NULL);           /* Mask the interrupt                        */
-    sigpending(level);                                  /* Get the pending signals                  */
-    level->__val[0] &= MAGIC_NUMBER;                    /* Don't care about the rest of the signals */
-    getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock       */
 
     /*
      * Below only works because SIGVTALRM is the
