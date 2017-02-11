@@ -50,7 +50,8 @@ int sem_destroy(sem_t sem)
 int sem_down(sem_t sem)
 {
     if(sem->count == 0) {                               /* Check if currently zero, If yes...   */
-        queue_enqueue(sem->waitQ, uthread_current());   /* Add thread to the semaphore's queue  */
+        if(queue_enqueue(sem->waitQ, uthread_current()))/* Add thread to the semaphore's queue  */
+            return FAIL;                                /* Queue enqueue failed, return fail    */
         uthread_block();                                /* Block the thread                     */
     } else sem->count--;                                /* Otherwise decrement the semaphore    */
     return SUCCESS;                                     /* Return success                       */
@@ -62,7 +63,7 @@ int sem_down(sem_t sem)
 int sem_up(sem_t sem)
 {
     struct uthread_tcb *thread;
-    if(sem->count == 0) {                                /* If incremented count == 0           */
+    if(sem->count == 0) {                                /* If current count == 0               */
         if(!queue_dequeue(sem->waitQ, (void **) &thread))/* Check if items to dequeue exist     */
             uthread_unblock(thread);                     /* Unblock the first item in the queue */
         else sem->count++;                               /* Otherwise increment the count       */

@@ -25,7 +25,7 @@ static sigset_t alarmMask;                              /* For faster masking of
 static struct itimerval disableTimer = {                /* For faster disabling of the timer         */
     .it_value.tv_usec     = 0,                          /* it_values are long ints, 8 Bytes          */
     .it_value.tv_sec      = 0,
-    .it_interval.tv_usec  = uSEC,
+    .it_interval.tv_usec  = 0,
     .it_interval.tv_sec   = 0
 };
 static struct itimerval restoreTimer;                   /* Initialized in preempt_start              */
@@ -44,13 +44,13 @@ void preempt_save(sigset_t *level)
      * .tv_usec was much larger than 10000
      * this could go very very wrong.
      */
-    sigpending(level);                                  /* Get the pending signals                  */
-    level->__val[0] &= MAGIC_NUMBER;                    /* Bitwise AND with the Magic Number        */
+    sigpending(level);                                  /* Save the pending signals                 */
+    level->__val[0] &= MAGIC_NUMBER;                    /* Don't care about anything but SIGVTALRM  */
     getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock      */
     level->__val[0] |= it.it_value.tv_usec;             /* Save time left inside current sigset_t   */
 
     /*
-     * Could also skip the OR and just store it
+     * Could also skip the bit ops and just store it
      * inside  __val[1-15]. Not as much fun...
      */
     preempt_disable();                                  /* Disable the timer                        */
@@ -61,13 +61,14 @@ void preempt_save(sigset_t *level)
 /* **************************************************** */
 void preempt_restore(sigset_t *level)
 {
-    long unsigned int timeLeft;                        /* Remaining tv_usec after extraction        */
+    long unsigned int timeLeft;                         /* Remaining tv_usec after extraction        */
 
-    timeLeft = (~MAGIC_NUMBER & level->__val[0]);      /* Bitwise AND with an inverted magic number */
-    restoreTimer.it_value.tv_usec = (long int)timeLeft;/* Save in global to pass to preempt enable  */
-    level->__val[0] &= MAGIC_NUMBER;                   /* Stop storing the remaining time           */
+    timeLeft = (~MAGIC_NUMBER & level->__val[0]);       /* Bitwise AND with an inverted magic number */
+    restoreTimer.it_value.tv_usec = (long int)timeLeft; /* Save in global to pass to preempt enable  */
+    level->__val[0] &= MAGIC_NUMBER;                    /* Stop storing the remaining time           */
+    if (level->__val[0]) raise(SIGVTALRM);              /* Restore the signal state                  */
 
-    preempt_enable();                                  /* Enable preemption, pick up with timeLeft  */
+    preempt_enable();                                   /* Enable preemption, pick up with timeLeft  */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -103,8 +104,9 @@ bool preempt_disabled(void)
     struct itimerval it;
     getitimer(ITIMER_VIRTUAL, &it);                     /* Get the current timer values             */
     return (bool) (it.it_interval.tv_usec > 0);         /* Return the boolean                       */
-    /* Could also have checked current mask value */
-    /* Not sure which way the instructor prefers  */
+
+    /* Could also have checked current mask value       */
+    /* Not sure which method the instructor prefers     */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -116,7 +118,7 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
-    uthread_yield();                                    /* yield() saves and restores the timer     */
+    uthread_yield();                                    /* yield() saves/restores signals & timer  */
 }
 /* **************************************************** */
 /* **************************************************** */

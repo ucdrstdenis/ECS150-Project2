@@ -50,7 +50,6 @@ struct uthread_tcb {
 
 typedef struct uthread_tcb  utcb;                        /* Typedef for convenience                 */
 typedef uthread_state_t     ustate;                      /* Typedef for convenience                 */
-
 /* **************************************************** */
 /* **************************************************** */
 /*                Static uThread Enqueue                */
