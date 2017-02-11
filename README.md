@@ -3,8 +3,8 @@
 ## Contributors ##
 Robert St. Denis & Liem Nguyen
 
-## Design Choices ##
-Overall, our uthread library `libuthread.a` was implemented with code readability and program efficiency in mind. No header files were added or modified to ensure high-quality coding practice was maintained, and nearly every line has been neatly commented for ease of understanding. 
+## Key Design Choices ##
+Overall, our uthread library `libuthread.a` was implemented with code readability and program efficiency in mind. No header files were added or modified to ensure high-quality coding practice was maintained, and nearly every line has been neatly commented for ease of understanding and quality documentation. 
 
 Our queue API uses a circular queue for robustness with head and tail pointers as well as a length property. All queue functions excluding `queue_iterate()` and `queue_delete()` are *O(1)*. 
 
@@ -29,9 +29,9 @@ struct uthread_tcb {
 
 `semaphore.c` is both straightforward and brief. The semaphore structure holds only a single `size_t` and a `queue_t` of blocked threads.
 
-`preempt.c` is brief, but contains some very specific design choices. Our idea behind `preempt_save()` and `preempt_restore()` was not only to ensure that the current thread's signal state would be saved, but also that the current value of the timer would be saved. Since the save and restore functions only have access to a single sigset_t pointer, we used bitwise operations to store and extact the current timer value within the mask. This only works however, under the circumstances that `SIGVTALRM` is the only signal of interest, and that the timer value is not set much larger than the required 10000 microseconds (Or else it could potentially conflict with the mask value of `0x2000000`);
+`preempt.c` is brief, but contains some very specific design choices. Our idea behind `preempt_save()` and `preempt_restore()` was not only to ensure that the current thread's signal state would be saved, but also that the current value of the timer would be maintained. Since the save and restore functions only have access to a single `sigset_t` pointer, we used bitwise operations to store and extract the current timer value within the set of saved signals. This only works however, under the circumstances that `SIGVTALRM` is the only signal of interest, and that the timer value is not set much larger than the required 10000 microseconds (Or else it could potentially conflict with the signal set value of `0x2000000`);
 
-Masking is performed via the `sigprocmask()` function. When `preempt_save()` is called, the interrupt is masked to prevent the critical section from being interrupted. The mask value and current timer value are stored in the thread's `sigset_t->__val[0]`. Finally, `preempt_save()` calls `preempt_disable()` which uses the `setitimer()` function to fully disable the timer. The interrupt is not unmasked until after the timer has been re-enabled with the restored value extracted in `preempt_restore()`. (If `preempt_enable()` is called directly, the restored value is simply the full value of 10,000 microseconds).
+Masking is performed via the `sigprocmask()` function. When `preempt_save()` is called, the interrupt is masked to prevent the critical section from being interrupted. The pending signals and current timer value are stored in the thread's `sigset_t->__val[0]`. Finally, `preempt_save()` calls `preempt_disable()` which uses the `setitimer()` function to fully disable the timer. The interrupt is not unmasked until after the timer has been re-enabled with the restored value extracted in `preempt_restore()`. (If `preempt_enable()` is called directly, the restored value is simply the full value of 10,000 microseconds).
 
 ## Additional Files ##
 `rmake.sh` - A remote compile script for compiling on CSIF. Uses 'rsync' and 'ssh' to sync the project folder and remotely compile on the CSIF machines.
