@@ -35,9 +35,8 @@ static struct itimerval restoreTimer;                   /* Initialized in preemp
 void preempt_save(sigset_t *level)
 {
     struct itimerval it;
-    long int timeLeft;
 
-    sigprocmask(SIG_BLOCK, &alarmMask, level);          /* Mask the interrupt                        */
+    sigprocmask(SIG_BLOCK, &alarmMask, NULL);           /* Mask the interrupt                        */
     sigpending(level);                                  /* Get the pending signals                  */
     level->__val[0] &= MAGIC_NUMBER;                    /* Don't care about the rest of the signals */
     getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock       */
@@ -50,8 +49,7 @@ void preempt_save(sigset_t *level)
      * this could go very very wrong.
      */
 
-    timeLeft = (level->__val[0] | it.it_value.tv_usec); /* Bitwise OR with the magic number         */
-    level->__val[0] =timeLeft;                          /* Save time left inside current sigset_t   */
+    level->__val[0] |= it.it_value.tv_usec;             /* Save time left inside current sigset_t   */
 
     /*
      * Could also skip the OR and just store it
@@ -69,10 +67,10 @@ void preempt_restore(sigset_t *level)
 
     timeLeft = (~MAGIC_NUMBER & level->__val[0]);      /* Bitwise AND with an inverted magic number */
     restoreTimer.it_value.tv_usec = (long int)timeLeft;/* Save in global to pass to preempt enable  */
-    level->__val[0] = MAGIC_NUMBER;                    /* Stop storing the remaining time           */
+    level->__val[0] &= MAGIC_NUMBER;                   /* Stop storing the remaining time           */
 
     preempt_enable();                                  /* Enable preemption, pick up with timeLeft  */
-    sigprocmask(SIG_UNBLOCK, &alarmMask, level);       /* Un-mask the interrupt                     */
+    sigprocmask(SIG_UNBLOCK, &alarmMask, NULL);        /* Un-mask the interrupt                     */
 }
 /* **************************************************** */
 /* **************************************************** */
