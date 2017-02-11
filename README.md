@@ -38,7 +38,7 @@ Masking is performed via the `sigprocmask()` function. When `preempt_save()` is 
 
 `ExampleFiles` - Directory containing instructor provided files and the assignment.
 
-`REPORT.md` - A copy of this README.md file
+`README.md` - A hard link to this REPORT.md file
 
 ## A Highly Detailed Overview of libuthread.a ##
 ### Phase 1 - A Queue API ###
