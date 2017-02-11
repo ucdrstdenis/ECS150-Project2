@@ -48,7 +48,9 @@ void preempt_save(sigset_t *level)
      * .tv_usec was much larger than 10000
      * this could go very very wrong.
      */
-
+    sigpending(level);                                  /* Get the pending signals                  */
+    level->__val[0] &= MAGIC_NUMBER;                    /* Bitwise AND with the Magic Number        */
+    getitimer(IT_VIRT, &it);                            /* Get the remaining time on the clock      */
     level->__val[0] |= it.it_value.tv_usec;             /* Save time left inside current sigset_t   */
 
     /*
