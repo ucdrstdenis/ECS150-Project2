@@ -37,10 +37,6 @@ typedef enum  {                                         /* See Anderson Textbook
     DONE    = 0x03                                      /* Finished list, Regs to be deleted        */
 } uthread_state_t;
 
-typedef struct itimerval    utime_t;                     /* Typedef for convenience                 */
-typedef struct uthread_tcb  utcb;                        /* Typedef for convenience                 */
-typedef uthread_state_t     ustate;                      /* Typedef for convenience                 */
-
 struct uthread_tcb {
     uthread_state_t state;                              /* Holds the thread's state                 */
     uthread_func_t func;                                /* Pointer to thread function               */
@@ -51,6 +47,9 @@ struct uthread_tcb {
     //tid_t tid;                                        /* TODO thread ID, pull from POOL           */
     //unsigned char priority;                           /* TODO QoS, 0-20 on Linux (I think)        */
 };
+
+typedef struct uthread_tcb  utcb;                        /* Typedef for convenience                 */
+typedef uthread_state_t     ustate;                      /* Typedef for convenience                 */
 
 /* **************************************************** */
 /* **************************************************** */
@@ -79,9 +78,9 @@ void uthread_yield(void)
 {                                                       /* See Figure 4.14 in Anderson Textbook     */
     utcb *nextTCB, *runTCB, *doneTCB;                   /* Declare TCB pointers                     */
     preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
+
     if(!queue_dequeue(ReadyQ, (void **) &nextTCB)) {    /* Get the next TCB from the Ready queue    */
         queue_dequeue(RunQ,   (void **) &runTCB);       /* Remove thread from the running queue     */
-        //if (runTCB == NULL) return;                   /* This shouldn't ever happen               */
         uthread_enqueue(runTCB, READY);                 /* Change state, add to ready queue         */
         uthread_enqueue(nextTCB, RUNNING);              /* Change state, add to running queue       */
         uthread_ctx_switch(runTCB->uctx, nextTCB->uctx);/* Switch context of runTCB and nextTCB     */
@@ -133,13 +132,12 @@ void uthread_exit(void)
 {                                                       /* See Anderson Textbook 4.6.2              */
     utcb *me, *next;                                    /* Declare TCB pointers                     */
 
-    preempt_save(uthread_current()->sigset);            /* Save signal state, disable interrupts    */
+    preempt_disable();                                  /* Disable interrupts                       */
     queue_dequeue(RunQ, (void **) &me);                 /* Remove thread from the running queue     */
     queue_dequeue(ReadyQ, (void **) &next);             /* Get the next TCB from the ready queue    */
     uthread_enqueue(me, DONE);                          /* Set the state, add to done queue         */
     uthread_enqueue(next, RUNNING);                     /* Set the state, add to running queue      */
     uthread_ctx_switch(me->uctx, next->uctx);           /* Switch context of threads                */
-   // preempt_restore(uthread_current()->sigset);       /* Restore signal state, enable interrupts  */
 }
 /* **************************************************** */
 /* **************************************************** */
@@ -197,9 +195,7 @@ void uthread_start(uthread_func_t start, void *arg)
     preempt_start();                                    /* Start the timer for the running thread       */
     uthread_create(start, arg);                         /* Create 1 thread, add to ready queue          */
 
-
     while(queue_length(ReadyQ))     uthread_yield();    /* Ready threads exist? Switch to next thread   */
-
 
     /* Memory cleanup */
     queue_delete(RunQ, (void *) initThread);            /* Remove initThread from the running queue     */
