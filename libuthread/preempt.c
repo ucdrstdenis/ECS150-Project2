@@ -25,7 +25,7 @@ static sigset_t alarmMask;                              /* For faster masking of
 static struct itimerval disableTimer = {                /* For faster disabling of the timer         */
     .it_value.tv_usec     = 0,                          /* it_values are long ints, 8 Bytes          */
     .it_value.tv_sec      = 0,
-    .it_interval.tv_usec  = 0,
+    .it_interval.tv_usec  = uSEC,
     .it_interval.tv_sec   = 0
 };
 static struct itimerval restoreTimer;                   /* Initialized in preempt_start              */
